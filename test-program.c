@@ -24,6 +24,8 @@ static char buf[1024];
 
 NOTIFICATION(request, const char *data, size_t size);
 
+static const struct request_notifier notifier;
+
 static void
 poll_loop(struct ppoint_state *pp_state, size_t n)
 {

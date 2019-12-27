@@ -7,6 +7,10 @@ enum notification_result {
         NOTIFICATION_RESULT_WAKE = 1,
 };
 
+/*
+ * TODO: static registration of ops to encode them in few (<= 16 ?)
+ * bits, and pack that with a reference in 64 bits.
+ */
 #define NOTIFICATION(NAME, ...)                                         \
         struct NAME {                                                   \
                 const struct NAME##_notifier {                          \
@@ -19,8 +23,8 @@ enum notification_result {
 
 #define NOTIFY(NOTIFICATION, ...)                                       \
         ({                                                              \
-                __typeof__(NOTIFICATION)* notif_ = &(NOTIFICATION);     \
-                if (notif_->op->fn(notif_->ref, ##__VA_ARGS__) !=       \
+                __typeof__(NOTIFICATION) notif_ = (NOTIFICATION);       \
+                if (notif_.op->fn(notif_->ref, ##__VA_ARGS__) !=        \
                     NOTIFICATION_RESULT_IGNORE)                         \
-                        slab_notify(notif_->op->base, notif_->ref);     \
+                        slab_notify(notif_.op->base, notif_->ref);      \
         })

@@ -20,7 +20,7 @@ enum notification_result {
 #define NOTIFY(NOTIFICATION, ...)                                       \
         ({                                                              \
                 __typeof__(NOTIFICATION)* notif_ = &(NOTIFICATION);     \
-                if (notif_->op->fn(notif_->ref, ##__VA_ARGS__) !=        \
+                if (notif_->op->fn(notif_->ref, ##__VA_ARGS__) !=       \
                     NOTIFICATION_RESULT_IGNORE)                         \
                         slab_notify(notif_->op->base, notif_->ref);     \
         })

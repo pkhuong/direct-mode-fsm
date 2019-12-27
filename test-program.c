@@ -1,5 +1,6 @@
 #include <stdio.h>
 
+#include "notification.h"
 #include "program_point.h"
 #include "slab.h"
 
@@ -20,6 +21,8 @@ static char buf[1024];
 /*         SLAB_RELEASE(slab_head, SLAB_ALLOC(slab_head)); */
 /*         SLAB_OBJECT_OF(slab_head, SLAB_ALLOC(slab_head), x); */
 /* } */
+
+NOTIFICATION(request, const char *data, size_t size);
 
 static void
 poll_loop(struct ppoint_state *pp_state, size_t n)

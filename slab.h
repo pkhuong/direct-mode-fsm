@@ -16,6 +16,10 @@ struct slab_entry {
         uint64_t version;
 };
 
+struct slab_reference {
+        uint64_t bits;
+};
+
 struct slab_magazine;
 
 struct slab_base {
@@ -41,6 +45,8 @@ void slab_init(struct slab_base *, void *arena, size_t arena_size,
 
 void *slab_alloc(struct slab_base *);
 void slab_release(struct slab_base *, void *);
+
+void slab_notify(struct slab_base *, struct slab_reference);
 
 /*
  * Given an interior pointer for a slab allocated object, returns the

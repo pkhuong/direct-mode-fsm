@@ -53,7 +53,7 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
  *
  * See IMSM_GET for a type-safe version.
  */
-struct imsm_entry *imsm_get(struct imsm *);
+inline struct imsm_entry *imsm_get(struct imsm *);
 
 /*
  * Deallocates one object back to the `imsm`'s slab.  Safe to call on
@@ -63,3 +63,5 @@ struct imsm_entry *imsm_get(struct imsm *);
  * See IMSM_GET for a type-safe version.
  */
 void imsm_put(struct imsm *, struct imsm_entry *);
+
+#include "imsm_inl.h"

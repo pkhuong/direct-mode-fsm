@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stddef.h>
 
 #include "imsm.h"
@@ -30,10 +31,21 @@ init(void)
         return;
 }
 
+void
+slab_get_put()
+{
+        struct echo_state *state;
+
+        state = IMSM_GET(&echo);
+        assert(state->in_count == 0);
+        return;
+}
+
 int
 main()
 {
 
         init();
+        slab_get_put();
         return 0;
 }

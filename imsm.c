@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "imsm_internal.h"
 
@@ -16,9 +15,21 @@ struct imsm_slab_magazine {
 
 /*
  * Returns a pointer to the allocation cache in a magazine.
+ * The freed entries cache counts from the end.
  */
 static struct imsm_entry **
-cache_of_magazine(struct imsm_slab_magazine *magazine)
+free_cache_of_magazine(struct imsm_slab_magazine *magazine)
+{
+
+        assert(magazine != NULL);
+        return &magazine->entries[SLAB_MAGAZINE_SIZE - 1];
+}
+
+/*
+ * The `current_allocating` cache counts from the end.
+ */
+static struct imsm_entry **
+alloc_cache_of_magazine(struct imsm_slab_magazine *magazine)
 {
 
         assert(magazine != NULL);
@@ -26,10 +37,20 @@ cache_of_magazine(struct imsm_slab_magazine *magazine)
 }
 
 /*
- * Inverses `cache_of_magazine`.
+ * Inverts `free_cache_of_magazine`.
  */
 static struct imsm_slab_magazine *
-magazine_of_cache(struct imsm_entry **entries)
+magazine_of_free_cache(struct imsm_entry **entries)
+{
+        const size_t offset = __builtin_offsetof(struct imsm_slab_magazine, entries);
+        char *base = (void *)(entries - (SLAB_MAGAZINE_SIZE - 1));
+
+        assert(entries != NULL);
+        return (void *)(base - offset);
+}
+
+static struct imsm_slab_magazine *
+magazine_of_alloc_cache(struct imsm_entry **entries)
 {
         const size_t offset = __builtin_offsetof(struct imsm_slab_magazine, entries);
         char *base = (void *)entries;
@@ -82,8 +103,8 @@ slab_refresh_current_freeing(struct imsm_slab *slab)
         assert(slab->current_freeing == NULL);
 
         empty = slab_get_empty_magazine(slab);
-        slab->current_freeing = cache_of_magazine(empty);
-        slab->current_free_index = SLAB_MAGAZINE_SIZE;
+        slab->current_freeing = free_cache_of_magazine(empty);
+        slab->current_free_index = -SLAB_MAGAZINE_SIZE;
         return;
 }
 
@@ -98,11 +119,11 @@ static void
 slab_convert_freeing_to_allocating(struct imsm_slab *slab)
 {
         struct imsm_slab_magazine *current_cache;
-        size_t num_freed = SLAB_MAGAZINE_SIZE - slab->current_free_index;
+        size_t num_freed = SLAB_MAGAZINE_SIZE + slab->current_free_index;
 
         assert(slab->current_freeing != NULL &&
             "current_freeing must always be valid and never full.");
-        assert(slab->current_free_index <= SLAB_MAGAZINE_SIZE);
+        assert(slab->current_free_index >= -SLAB_MAGAZINE_SIZE);
 
         /* If the current freeing cache is empty, there's nothing to convert. */
         if (num_freed == 0) {
@@ -111,22 +132,13 @@ slab_convert_freeing_to_allocating(struct imsm_slab *slab)
                 return;
         }
 
-        current_cache = magazine_of_cache(slab->current_freeing);
+        current_cache = magazine_of_free_cache(slab->current_freeing);
 
         /* Steal the current free cache, replace it with a new empty one. */
         slab->current_freeing = NULL;
         slab_refresh_current_freeing(slab);
 
-        /*
-         * We pop in the same order we push, so we have to slide the
-         * freed entries to the front of the cache, and invert the
-         * index to point to the populated entries in the cache.
-         */
-        memmove(&current_cache->entries[0],
-            &current_cache->entries[SLAB_MAGAZINE_SIZE - num_freed],
-            num_freed * sizeof(current_cache->entries[0]));
-
-        slab->current_allocating = cache_of_magazine(current_cache);
+        slab->current_allocating = alloc_cache_of_magazine(current_cache);
         slab->current_alloc_index = num_freed;
         return;
 }
@@ -147,7 +159,7 @@ slab_refresh_current_allocating(struct imsm_slab *slab)
                 return;
         }
 
-        slab->current_allocating = cache_of_magazine(full);
+        slab->current_allocating = alloc_cache_of_magazine(full);
         slab->current_alloc_index = SLAB_MAGAZINE_SIZE;
         return;
 }
@@ -164,7 +176,7 @@ slab_flush(struct imsm_slab *slab)
         assert(slab->current_free_index == 0 &&
             "slab_flush must only be called on full magazines");
 
-        full = magazine_of_cache(slab->current_freeing);
+        full = magazine_of_free_cache(slab->current_freeing);
         full->next = slab->freelist;
         slab->freelist = full;
 
@@ -180,7 +192,7 @@ static void
 slab_add_free(struct imsm_slab *slab, struct imsm_entry *entry)
 {
 
-        slab->current_freeing[--slab->current_free_index] = entry;
+        slab->current_freeing[++slab->current_free_index] = entry;
         if (slab->current_free_index == 0)
                 slab_flush(slab);
         return;
@@ -206,8 +218,8 @@ slab_init_freelist(struct imsm_slab *slab)
          * Confirm that we setup a valid slab.
          */
         assert(slab->current_alloc_index == 0);
-        assert(slab->current_free_index > 0 &&
-            slab->current_free_index <= SLAB_MAGAZINE_SIZE);
+        assert(slab->current_free_index < 0 &&
+            slab->current_free_index >= -SLAB_MAGAZINE_SIZE);
 
         /* The slab's allocation cache is initially empty. */
         assert(slab->current_allocating == NULL);
@@ -244,7 +256,7 @@ imsm_get_cache_reload(struct imsm *imsm)
         if (slab->current_allocating != NULL) {
                 struct imsm_slab_magazine *empty;
 
-                empty = magazine_of_cache(slab->current_allocating);
+                empty = magazine_of_alloc_cache(slab->current_allocating);
                 empty->next = slab->empty;
                 slab->empty = empty;
                 slab->current_allocating = NULL;

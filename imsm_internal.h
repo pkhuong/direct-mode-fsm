@@ -9,8 +9,10 @@ struct imsm_slab {
         void *arena;
         size_t arena_size;
         size_t element_size;
+        /* Allocation goes down to 0. */
         uint32_t current_alloc_index;
-        uint32_t current_free_index;
+        /* Deallocation goes up to 0. */
+        int32_t current_free_index;
         /*
          * These two arrays are caches populated or consumed down from
          * current_*_index to 0.  Once the item at zero is populated

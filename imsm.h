@@ -62,6 +62,6 @@ inline struct imsm_entry *imsm_get(struct imsm *);
  *
  * See IMSM_GET for a type-safe version.
  */
-void imsm_put(struct imsm *, struct imsm_entry *);
+inline void imsm_put(struct imsm *, struct imsm_entry *);
 
 #include "imsm_inl.h"

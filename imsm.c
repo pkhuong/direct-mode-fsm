@@ -156,7 +156,7 @@ slab_refresh_current_allocating(struct imsm_slab *slab)
  * Flushes the current full freeing magazine to the freelist, and
  * replaces it with a new empty magazine.
  */
-static void
+static inline void
 slab_flush(struct imsm_slab *slab)
 {
         struct imsm_slab_magazine *full;
@@ -166,7 +166,7 @@ slab_flush(struct imsm_slab *slab)
 
         full = magazine_of_cache(slab->current_freeing);
         full->next = slab->freelist;
-        slab->freelist = full->next;
+        slab->freelist = full;
 
         slab->current_freeing = NULL;
         slab_refresh_current_freeing(slab);
@@ -254,6 +254,19 @@ imsm_get_cache_reload(struct imsm *imsm)
 }
 
 extern struct imsm_entry *imsm_get(struct imsm *imsm);
+
+void
+imsm_put_cache_reload(struct imsm *imsm)
+{
+        struct imsm_slab *slab = &imsm->slab;
+
+        assert(slab->current_free_index == 0 &&
+            "Only empty free caches may be reloaded");
+        slab_flush(slab);
+        return;
+}
+
+extern void imsm_put(struct imsm *imsm, struct imsm_entry *freed);
 
 void
 imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,

@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "imsm.h"
 
@@ -34,10 +35,17 @@ init(void)
 void
 slab_get_put()
 {
-        struct echo_state *state;
+        struct echo_state *state[32];
 
-        state = IMSM_GET(&echo);
-        assert(state->in_count == 0);
+        for (size_t i = 0; i < 32; i++) {
+                state[i] = IMSM_GET(&echo);
+
+                assert(state[i]->in_count == 0);
+                printf("%p\n", state[i]);
+        }
+
+        for (size_t i = 0; i < 32; i++)
+                IMSM_PUT(&echo, state[i]);
         return;
 }
 

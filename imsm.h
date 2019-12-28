@@ -46,3 +46,20 @@ struct imsm_ctx {
  */
 void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
     void (*poll_fn)(struct imsm_ctx *));
+
+/*
+ * Allocates one object from the `imsm`'s slab, or NULL if the slab
+ * has no free object.
+ *
+ * See IMSM_GET for a type-safe version.
+ */
+struct imsm_entry *imsm_get(struct imsm *);
+
+/*
+ * Deallocates one object back to the `imsm`'s slab.  Safe to call on
+ * NULL pointers, but will abort on any other pointer not allocated
+ * by the `imsm`.
+ *
+ * See IMSM_GET for a type-safe version.
+ */
+void imsm_put(struct imsm *, struct imsm_entry *);

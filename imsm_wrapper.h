@@ -23,7 +23,7 @@
                 .iteration = (ITER),            \
          })
 
-#define IMSM_INDEX(CTX, NAME, ...) \
+#define IMSM_INDEX(CTX, NAME, ...)                                      \
         (imsm_index((CTX), IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))
 
 #define IMSM(TYNAME, ELTYPE)                                    \
@@ -66,3 +66,22 @@
                 /* We know there is an imsm_entry at offset 0. */       \
                 imsm_put(&imsm_->imsm, (struct imsm_entry *)ptr_);      \
         })
+
+#define IMSM_REGION(CTX, NAME, ...)                             \
+        IMSM_REGION_(__COUNTER__, (CTX), (NAME), ##__VA_ARGS__)
+
+#define IMSM_REGION_(UNIQUE, CTX, NAME, ...)                           \
+        const struct imsm_unwind_record imsm_unwind_##UNIQUE##_        \
+        __attribute__((__cleanup__(imsm_region_pop)))                  \
+                = imsm_region_push(CTX, IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__))
+
+#define WITH_IMSM_REGION(CTX, NAME, ...)        \
+        WITH_IMSM_REGION_(__COUNTER__, (CTX), (NAME), ##__VA_ARGS__)
+
+#define WITH_IMSM_REGION_(UNIQUE, CTX, NAME, ...)              \
+        for (struct imsm_unwind_record imsm_unwind_##UNIQUE##_ \
+             __attribute__((__cleanup__(imsm_region_pop)))     \
+                 = imsm_region_push(CTX,                       \
+                 IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__));     \
+             imsm_unwind_##UNIQUE##_.scratch == 0;             \
+             imsm_unwind_##UNIQUE##_.scratch = 1)

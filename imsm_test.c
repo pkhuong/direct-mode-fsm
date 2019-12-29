@@ -106,6 +106,27 @@ slab_get_empty(void)
         return;
 }
 
+static void
+ppoint_rec(struct imsm_ctx *ctx)
+{
+
+        IMSM_REGION(ctx, "ppoint_rec");
+
+        printf("ppoint_rec: %zu\n", IMSM_INDEX(ctx, "rec"));
+        return;
+}
+
+static void
+ppoint_rec2(struct imsm_ctx *ctx)
+{
+
+        WITH_IMSM_REGION(ctx, "ppoint_rec") {
+                printf("ppoint_rec: %zu\n", IMSM_INDEX(ctx, "rec"));
+        }
+
+        return;
+}
+
 void
 ppoint(void)
 {
@@ -121,6 +142,12 @@ ppoint(void)
                         printf("loop: %zu\n", IMSM_INDEX(&ctx, "loop", i));
                 }
         }
+
+        for (size_t i = 0; i < 2; i++)
+                ppoint_rec(&ctx);
+
+        for (size_t i = 0; i < 2; i++)
+                ppoint_rec2(&ctx);
 
         printf("out: %zu\n", IMSM_INDEX(&ctx, "out"));
 }

@@ -46,6 +46,15 @@ struct imsm_ppoint {
 };
 
 /*
+ * In addition to regular program points, we can push and pop context.
+ * These values are encoded in the program point index.
+ */
+enum imsm_ppoint_action {
+        IMSM_PPOINT_ACTION_PUSH = -1,
+        IMSM_PPOINT_ACTION_POP = -2,
+};
+
+/*
  * We can update the state index visiting a new program point.
  *
  * Obtain one (by value) with IMSM_PPOINT_RECORD(NAME, ITERATION?).
@@ -54,6 +63,20 @@ struct imsm_ppoint_record {
         __uint128_t iteration;
         const struct imsm_ppoint *ppoint;
         size_t index;
+};
+
+/*
+ * We can also augment the program point data with additional "program
+ * region" context information.  This struct encapsulates the
+ * information needed to subtract region from the context.
+ *
+ * The useful side-effect of a region is that returning into the same
+ * program point in a new region yields a distinct index.
+ */
+struct imsm_unwind_record {
+        struct imsm_ppoint_record position;
+        struct imsm_ctx *context;
+        size_t scratch;
 };
 
 /*
@@ -109,5 +132,18 @@ inline void imsm_put(struct imsm *, struct imsm_entry *);
  * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
  */
 inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
+
+/*
+ * Augments the imsm context with a LIFO program point context record.
+ * The augmentation should be unwound with `imsm_region_pop` in LIFO
+ * order.
+ *
+ * See IMSM_REGION(CTX, NAME, ITER?) and WITH_IMSM_REGION(CTX, NAME, ITER?)
+ * for convenient wrappers.
+ */
+inline struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
+    struct imsm_ppoint_record);
+
+inline void imsm_region_pop(const struct imsm_unwind_record *);
 
 #include "imsm_inl.h"

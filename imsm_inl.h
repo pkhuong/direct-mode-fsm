@@ -70,3 +70,30 @@ imsm_index(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
         ctx->position.ppoint = record.ppoint;
         return ctx->position.index++;
 }
+
+inline struct imsm_unwind_record
+imsm_region_push(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
+{
+
+        /*
+         * Clear out the current position to make sure the next
+         * program point gets a fresh index.
+         */
+        ctx->position.ppoint = NULL;
+        record.index = (size_t)IMSM_PPOINT_ACTION_POP;
+        return (struct imsm_unwind_record) {
+                .position = record,
+                .context = ctx,
+        };
+}
+
+inline void
+imsm_region_pop(const struct imsm_unwind_record *unwind)
+{
+
+        /*
+         * We only need to clear the current position.
+         */
+        unwind->context->position.ppoint = NULL;
+        return;
+}

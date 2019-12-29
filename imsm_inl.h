@@ -25,9 +25,7 @@ imsm_get(struct imsm_ctx *ctx, struct imsm *imsm)
         alloc_index = slab->current_alloc_index - 1;
         slab->current_alloc_index = alloc_index;
         ret = slab->current_allocating[alloc_index];
-        if (ret == NULL)
-                __builtin_unreachable();
-
+        ret->version++;
         if (__builtin_expect(alloc_index == 0, 0))
                 imsm_get_cache_reload(imsm);
 
@@ -49,6 +47,8 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
                 return;
         }
 
+        freed->version = (freed->version + 1) & ~1;
+        freed->queue_id = -1;
         free_index = slab->current_free_index + 1;
         slab->current_free_index = free_index;
         slab->current_freeing[free_index] = freed;

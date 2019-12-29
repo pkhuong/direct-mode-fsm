@@ -70,7 +70,10 @@ slab_get_put_tight(void)
         state0 = IMSM_GET(&ctx, &small_echo);
         state1 = IMSM_GET(&ctx, &small_echo);
         state2 = IMSM_GET(&ctx, &small_echo);
-        printf("%p %p %p\n", state0, state1, state2);
+        printf("%p %i %p %i %p\n",
+               state0, state0->header.version,
+               state1, state1->header.version,
+               state2);
 
         assert(state0 != NULL);
         assert(state1 != NULL);
@@ -88,7 +91,10 @@ slab_get_put_tight(void)
         state0 = IMSM_GET(&ctx, &small_echo);
         state1 = IMSM_GET(&ctx, &small_echo);
         state2 = IMSM_GET(&ctx, &small_echo);
-        printf("%p %p %p\n", state0, state1, state2);
+        printf("%p %i %p %i %p\n",
+               state0, state0->header.version,
+               state1, state1->header.version,
+               state2);
 
         assert(state0 != NULL);
         assert(state1 != NULL);

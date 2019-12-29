@@ -15,7 +15,9 @@ struct imsm_ctx;
  * The first field in any IMSM state struct must be a `imsm_entry`.
  */
 struct imsm_entry {
+        /* Version is even if inactive, odd if active. */
         uint32_t version;
+        /* UINT16_MAX means no queue. */
         uint16_t queue_id;
         uint8_t wakeup_pending;
 };
@@ -103,6 +105,8 @@ struct imsm_ctx {
  * Initializes a base `imsm` struct.  Use
  *  `IMSM_INIT(imsm, path_to_imsm_entry_field, arena, arena_size, poll_fn)`
  * for a type-safe IMSM.
+ *
+ * The arena should be zero-initialized.
  */
 void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
     void (*poll_fn)(struct imsm_ctx *));

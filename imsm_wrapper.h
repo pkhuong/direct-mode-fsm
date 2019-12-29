@@ -49,22 +49,24 @@
                     sizeof(elt_t_), (POLL_FN));                         \
         })
 
-#define IMSM_GET(IMSM)                                                  \
+#define IMSM_GET(CTX, IMSM)                                             \
         ({                                                              \
+                struct imsm_ctx *ctx_ = (CTX);                          \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                                                                         \
-                (elt_t_ *)imsm_get(&imsm_->imsm);                       \
+                (elt_t_ *)imsm_get(ctx_, &imsm_->imsm);                 \
         })
 
-#define IMSM_PUT(IMSM, OBJ)                                             \
+#define IMSM_PUT(CTX, IMSM, OBJ)                                        \
         ({                                                              \
+                struct imsm_ctx *ctx_ = (CTX);                          \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                 elt_t_* ptr_ = (OBJ);                                   \
                                                                         \
                 /* We know there is an imsm_entry at offset 0. */       \
-                imsm_put(&imsm_->imsm, (struct imsm_entry *)ptr_);      \
+                imsm_put(ctx_, &imsm_->imsm, (struct imsm_entry *)ptr_); \
         })
 
 #define IMSM_REGION(CTX, NAME, ...)                             \

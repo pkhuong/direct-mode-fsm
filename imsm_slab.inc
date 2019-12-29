@@ -227,9 +227,12 @@ slab_init_freelist(struct imsm_slab *slab)
 }
 
 struct imsm_entry *
-imsm_get_slow(struct imsm *imsm)
+imsm_get_slow(struct imsm_ctx *ctx, struct imsm *imsm)
 {
         struct imsm_slab *slab = &imsm->slab;
+
+        assert(ctx->imsm == imsm &&
+            "imsm context and allocating imsm must match.");
 
         if (slab->current_allocating == NULL)
                 imsm_get_cache_reload(imsm);
@@ -237,7 +240,7 @@ imsm_get_slow(struct imsm *imsm)
                 return NULL;
 
         /* imsm_get only calls get_slow if current_allocating == NULL. */
-        return imsm_get(imsm);
+        return imsm_get(ctx, imsm);
 }
 
 void
@@ -263,17 +266,19 @@ imsm_get_cache_reload(struct imsm *imsm)
         slab_refresh_current_allocating(slab);
 }
 
-extern struct imsm_entry *imsm_get(struct imsm *imsm);
+extern struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *imsm);
 
 void
-imsm_put_cache_reload(struct imsm *imsm)
+imsm_put_cache_reload(struct imsm_ctx *ctx, struct imsm *imsm)
 {
         struct imsm_slab *slab = &imsm->slab;
 
+        assert(ctx->imsm == imsm &&
+            "imsm context and allocating imsm must match.");
         assert(slab->current_free_index == 0 &&
             "Only empty free caches may be reloaded");
         slab_flush(slab);
         return;
 }
 
-extern void imsm_put(struct imsm *imsm, struct imsm_entry *freed);
+extern void imsm_put(struct imsm_ctx *, struct imsm *imsm, struct imsm_entry *freed);

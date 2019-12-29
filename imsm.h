@@ -109,11 +109,13 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
 
 /*
  * Allocates one object from the `imsm`'s slab, or NULL if the slab
- * has no free object.
+ * has no free object.  The second argument is redundant, but serves
+ * as a witness that the context is for the correct imsm.  This
+ * function will abort on mismatches.
  *
  * See IMSM_GET for a type-safe version.
  */
-inline struct imsm_entry *imsm_get(struct imsm *);
+inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
 
 /*
  * Deallocates one object back to the `imsm`'s slab.  Safe to call on
@@ -122,7 +124,7 @@ inline struct imsm_entry *imsm_get(struct imsm *);
  *
  * See IMSM_GET for a type-safe version.
  */
-inline void imsm_put(struct imsm *, struct imsm_entry *);
+inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
 
 /*
  * Returns the state index for this program point record.  This value

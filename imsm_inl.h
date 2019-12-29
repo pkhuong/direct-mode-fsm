@@ -3,7 +3,7 @@
 /*
  * Full slow path for slab allocation.
  */
-struct imsm_entry *imsm_get_slow(struct imsm *);
+struct imsm_entry *imsm_get_slow(struct imsm_ctx *, struct imsm *);
 
 /*
  * Reloads the imsm slab's allocation cache.
@@ -11,15 +11,16 @@ struct imsm_entry *imsm_get_slow(struct imsm *);
 void imsm_get_cache_reload(struct imsm *);
 
 inline struct imsm_entry *
-imsm_get(struct imsm *imsm)
+imsm_get(struct imsm_ctx *ctx, struct imsm *imsm)
 {
         struct imsm_slab *slab = &imsm->slab;
         struct imsm_entry *ret;
         size_t alloc_index;
 
         /* If we have no allocation cache at all, enter the slow path. */
-        if (__builtin_expect(slab->current_allocating == NULL, 0))
-                return imsm_get_slow(imsm);
+        if (__builtin_expect(
+            ctx->imsm != imsm || slab->current_allocating == NULL, 0))
+                return imsm_get_slow(ctx, imsm);
 
         alloc_index = slab->current_alloc_index - 1;
         slab->current_alloc_index = alloc_index;
@@ -36,10 +37,10 @@ imsm_get(struct imsm *imsm)
 /*
  * Reloads the imsm slab's deallocation cache.
  */
-void imsm_put_cache_reload(struct imsm *imsm);
+void imsm_put_cache_reload(struct imsm_ctx *, struct imsm *imsm);
 
 inline void
-imsm_put(struct imsm *imsm, struct imsm_entry *freed)
+imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
 {
         struct imsm_slab *slab = &imsm->slab;
         long free_index;
@@ -51,8 +52,8 @@ imsm_put(struct imsm *imsm, struct imsm_entry *freed)
         free_index = slab->current_free_index + 1;
         slab->current_free_index = free_index;
         slab->current_freeing[free_index] = freed;
-        if (__builtin_expect(free_index == 0, 0))
-                imsm_put_cache_reload(imsm);
+        if (__builtin_expect(free_index == 0 || ctx->imsm != imsm, 0))
+                imsm_put_cache_reload(ctx, imsm);
         return;
 }
 

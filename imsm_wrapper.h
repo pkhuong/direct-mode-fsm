@@ -2,6 +2,14 @@
 
 #include <assert.h>
 
+/*
+ * A pointer to the current imsm context should be bound to
+ * IMSM_CTX_PTR_VAR.  IMSM_CTX_PTR(context_address) will
+ * setup such a binding.
+ */
+#define IMSM_CTX_PTR_VAR imsm_ctx_ptr_
+#define IMSM_CTX_PTR(CTX) struct imsm_ctx *const IMSM_CTX_PTR_VAR = (CTX)
+
 #define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
 #define IMSM_PPOINT_(NAME, UNIQUE) \
         ({                         \
@@ -23,8 +31,9 @@
                 .iteration = (ITER),            \
          })
 
-#define IMSM_INDEX(CTX, NAME, ...)                                      \
-        (imsm_index((CTX), IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))
+#define IMSM_INDEX(NAME, ...)                                      \
+        (imsm_index((IMSM_CTX_PTR_VAR),                            \
+             IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))
 
 #define IMSM(TYNAME, ELTYPE)                                    \
         struct TYNAME {                                         \
@@ -49,18 +58,18 @@
                     sizeof(elt_t_), (POLL_FN));                         \
         })
 
-#define IMSM_GET(CTX, IMSM)                                             \
+#define IMSM_GET(IMSM)                                                  \
         ({                                                              \
-                struct imsm_ctx *ctx_ = (CTX);                          \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                                                                         \
                 (elt_t_ *)imsm_get(ctx_, &imsm_->imsm);                 \
         })
 
-#define IMSM_PUT(CTX, IMSM, OBJ)                                        \
+#define IMSM_PUT(IMSM, OBJ)                                             \
         ({                                                              \
-                struct imsm_ctx *ctx_ = (CTX);                          \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                 elt_t_* ptr_ = (OBJ);                                   \
@@ -69,16 +78,18 @@
                 imsm_put(ctx_, &imsm_->imsm, (struct imsm_entry *)ptr_); \
         })
 
-#define IMSM_REGION(CTX, NAME, ...)                             \
-        IMSM_REGION_(__COUNTER__, (CTX), (NAME), ##__VA_ARGS__)
+#define IMSM_REGION(NAME, ...)                                          \
+        IMSM_REGION_(__COUNTER__, (IMSM_CTX_PTR_VAR),                   \
+            (NAME), ##__VA_ARGS__)
 
 #define IMSM_REGION_(UNIQUE, CTX, NAME, ...)                           \
         const struct imsm_unwind_record imsm_unwind_##UNIQUE##_        \
         __attribute__((__cleanup__(imsm_region_pop)))                  \
                 = imsm_region_push(CTX, IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__))
 
-#define WITH_IMSM_REGION(CTX, NAME, ...)        \
-        WITH_IMSM_REGION_(__COUNTER__, (CTX), (NAME), ##__VA_ARGS__)
+#define WITH_IMSM_REGION(NAME, ...)                                     \
+        WITH_IMSM_REGION_(__COUNTER__, (IMSM_CTX_PTR_VAR),              \
+            (NAME), ##__VA_ARGS__)
 
 #define WITH_IMSM_REGION_(UNIQUE, CTX, NAME, ...)              \
         for (struct imsm_unwind_record imsm_unwind_##UNIQUE##_ \

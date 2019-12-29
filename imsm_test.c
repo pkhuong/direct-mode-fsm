@@ -40,15 +40,17 @@ slab_get_put(void)
                 &echo.imsm,
         };
 
+        IMSM_CTX_PTR(&ctx);
+
         for (size_t i = 0; i < 32; i++) {
-                state[i] = IMSM_GET(&ctx, &echo);
+                state[i] = IMSM_GET(&echo);
 
                 assert(state[i]->in_count == 0);
                 printf("%p\n", state[i]);
         }
 
         for (size_t i = 0; i < 32; i++)
-                IMSM_PUT(&ctx, &echo, state[i]);
+                IMSM_PUT(&echo, state[i]);
         return;
 }
 
@@ -63,13 +65,14 @@ slab_get_put_tight(void)
 
         struct echo_state *state0, *state1, *state2;
 
+        IMSM_CTX_PTR(&ctx);
         /* Make sure we handle small arenas. */
         IMSM_INIT(&small_echo, header, buf, sizeof(buf),
                   echo_poll);
 
-        state0 = IMSM_GET(&ctx, &small_echo);
-        state1 = IMSM_GET(&ctx, &small_echo);
-        state2 = IMSM_GET(&ctx, &small_echo);
+        state0 = IMSM_GET(&small_echo);
+        state1 = IMSM_GET(&small_echo);
+        state2 = IMSM_GET(&small_echo);
         printf("%p %i %p %i %p\n",
                state0, state0->header.version,
                state1, state1->header.version,
@@ -79,18 +82,18 @@ slab_get_put_tight(void)
         assert(state1 != NULL);
         assert(state2 == NULL);
 
-        IMSM_PUT(&ctx, &small_echo, state2);
-        IMSM_PUT(&ctx, &small_echo, state1);
+        IMSM_PUT(&small_echo, state2);
+        IMSM_PUT(&small_echo, state1);
 
-        state2 = IMSM_GET(&ctx, &small_echo);
+        state2 = IMSM_GET(&small_echo);
         assert(state2 == state2);
 
-        IMSM_PUT(&ctx, &small_echo, state2);
-        IMSM_PUT(&ctx, &small_echo, state0);
+        IMSM_PUT(&small_echo, state2);
+        IMSM_PUT(&small_echo, state0);
 
-        state0 = IMSM_GET(&ctx, &small_echo);
-        state1 = IMSM_GET(&ctx, &small_echo);
-        state2 = IMSM_GET(&ctx, &small_echo);
+        state0 = IMSM_GET(&small_echo);
+        state1 = IMSM_GET(&small_echo);
+        state2 = IMSM_GET(&small_echo);
         printf("%p %i %p %i %p\n",
                state0, state0->header.version,
                state1, state1->header.version,
@@ -117,28 +120,30 @@ slab_get_empty(void)
         IMSM_INIT(&small_echo, header, buf, sizeof(buf),
                   echo_poll);
 
-        state = IMSM_GET(&ctx, &small_echo);
+        IMSM_CTX_PTR(&ctx);
+
+        state = IMSM_GET( &small_echo);
         printf("%p\n", state);
         assert(state == NULL);
         return;
 }
 
 static void
-ppoint_rec(struct imsm_ctx *ctx)
+ppoint_rec(struct imsm_ctx *IMSM_CTX_PTR_VAR)
 {
 
-        IMSM_REGION(ctx, "ppoint_rec");
+        IMSM_REGION("ppoint_rec");
 
-        printf("ppoint_rec: %zu\n", IMSM_INDEX(ctx, "rec"));
+        printf("ppoint_rec: %zu\n", IMSM_INDEX("rec"));
         return;
 }
 
 static void
-ppoint_rec2(struct imsm_ctx *ctx)
+ppoint_rec2(struct imsm_ctx *IMSM_CTX_PTR_VAR)
 {
 
-        WITH_IMSM_REGION(ctx, "ppoint_rec") {
-                printf("ppoint_rec: %zu\n", IMSM_INDEX(ctx, "rec"));
+        WITH_IMSM_REGION("ppoint_rec") {
+                printf("ppoint_rec: %zu\n", IMSM_INDEX("rec"));
         }
 
         return;
@@ -151,12 +156,13 @@ ppoint(void)
                 &echo.imsm,
         };
 
-        printf("entry: %zu\n", IMSM_INDEX(&ctx, "entry"));
-        printf("next: %zu\n", IMSM_INDEX(&ctx, "next"));
+        IMSM_CTX_PTR(&ctx);
+        printf("entry: %zu\n", IMSM_INDEX("entry"));
+        printf("next: %zu\n", IMSM_INDEX("next"));
 
         for (size_t i = 0; i < 10; i++) {
                 for (size_t j = 0; j < 2; j++) {
-                        printf("loop: %zu\n", IMSM_INDEX(&ctx, "loop", i));
+                        printf("loop: %zu\n", IMSM_INDEX("loop", i));
                 }
         }
 
@@ -166,7 +172,7 @@ ppoint(void)
         for (size_t i = 0; i < 2; i++)
                 ppoint_rec2(&ctx);
 
-        printf("out: %zu\n", IMSM_INDEX(&ctx, "out"));
+        printf("out: %zu\n", IMSM_INDEX("out"));
 }
 
 int

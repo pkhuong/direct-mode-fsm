@@ -9,6 +9,7 @@ struct imsm_slab {
         void *arena;
         size_t arena_size;
         size_t element_size;
+        size_t element_count;
         /* Allocation goes down to 0. */
         uint32_t current_alloc_index;
         /* Deallocation goes up to 0. */

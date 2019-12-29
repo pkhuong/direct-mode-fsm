@@ -203,6 +203,7 @@ slab_init_freelist(struct imsm_slab *slab)
         const size_t elsize = slab->element_size;
         const size_t nelem = slab->arena_size / elsize;
 
+        slab->element_count = nelem;
         slab_refresh_current_freeing(slab);
         for (size_t i = nelem; i --> 0; ) {
                 struct imsm_entry *to_free;
@@ -282,3 +283,7 @@ imsm_put_cache_reload(struct imsm_ctx *ctx, struct imsm *imsm)
 }
 
 extern void imsm_put(struct imsm_ctx *, struct imsm *imsm, struct imsm_entry *freed);
+
+extern struct imsm_entry *imsm_entry_of(struct imsm_ctx *, void *);
+
+extern struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);

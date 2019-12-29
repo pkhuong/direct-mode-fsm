@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "imsm_internal.h"
+#include "imsm_list.h"
 #include "imsm_wrapper.h"
 
 struct imsm_ctx;
@@ -40,6 +41,7 @@ struct imsm {
 struct imsm_ctx {
         struct imsm *imsm;
         struct imsm_ppoint_record position;
+        struct imsm_list_cache cache;
 };
 
 /*
@@ -51,6 +53,20 @@ struct imsm_ctx {
  */
 void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
     void (*poll_fn)(struct imsm_ctx *));
+
+/*
+ * Adds all records in `imsm_list_in` where the auxiliary value equals
+ * `aux_match` to the queue identified by the current program point,
+ * and returns a list of all the values associated with that queue
+ * that (may) have been woken.
+ *
+ * The values in and out of the stage must be `offset` away from the
+ * `imsm_entry` header.
+ *
+ * A NULL list is empty.
+ */
+void **imsm_stage_io(struct imsm_ctx *, struct imsm_ppoint_record,
+     size_t offset, void **list_in, uint64_t aux_match);
 
 /*
  * Allocates one object from the `imsm`'s slab, or NULL if the slab
@@ -70,6 +86,19 @@ inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
  * See IMSM_GET for a type-safe version.
  */
 inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
+
+/*
+ * Accepts an interior pointer to an element of the `imsm_ctx`'s slab,
+ * and returns a pointer to the entry header, or NULL if there is no
+ * such element in the slab.
+ */
+inline struct imsm_entry *imsm_entry_of(struct imsm_ctx *, void *);
+
+/*
+ * Returns a pointer to the `i`th element of `imsm_ctx`'s slab, or
+ * NULL if there is no such element, or the element is inactive.
+ */
+inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);
 
 /*
  * Returns the state index for this program point record.  This value

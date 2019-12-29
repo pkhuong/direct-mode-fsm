@@ -10,31 +10,6 @@
 #define IMSM_CTX_PTR_VAR imsm_ctx_ptr_
 #define IMSM_CTX_PTR(CTX) struct imsm_ctx *const IMSM_CTX_PTR_VAR = (CTX)
 
-#define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
-#define IMSM_PPOINT_(NAME, UNIQUE) \
-        ({                         \
-                static const struct imsm_ppoint ppoint_##UNIQUE = {     \
-                        .name = NAME,                                   \
-                        .function = __PRETTY_FUNCTION__,                \
-                        .file = __FILE__,                               \
-                        .lineno = __LINE__,                             \
-                        .unique = UNIQUE,                               \
-                };                                                      \
-                                                                        \
-                &ppoint_##UNIQUE;                                       \
-        })
-
-#define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_((NAME), ##__VA_ARGS__, 0)
-#define IMSM_PPOINT_RECORD_(NAME, ITER, ...)    \
-        ((struct imsm_ppoint_record) {          \
-                .ppoint = IMSM_PPOINT(NAME),    \
-                .iteration = (ITER),            \
-         })
-
-#define IMSM_INDEX(NAME, ...)                                      \
-        (imsm_index((IMSM_CTX_PTR_VAR),                            \
-             IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))
-
 #define IMSM(TYNAME, ELTYPE)                                    \
         struct TYNAME {                                         \
                 union {                                         \
@@ -58,10 +33,23 @@
                     sizeof(elt_t_), (POLL_FN));                         \
         })
 
+#define IMSM_STAGE(NAME, LIST_IN, AUX_MATCH)                    \
+        IMSM_STAGE_IDX((NAME), 0, (LIST_IN), (AUX_MATCH))
+
+#define IMSM_STAGE_IDX(NAME, INDEX, LIST_IN, AUX_MATCH)                 \
+        ({                                                              \
+                __typeof__(**(LIST_IN)) list_in_ = (LIST_IN);           \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
+                                                                        \
+                (__typeof__(list_in_))imsm_stage_io(                    \
+                        ctx_, IMSM_PPOINT_RECORD((NAME), (INDEX)),      \
+                        (void **)list_in_, (AUX_MATCH));                \
+        })
+
 #define IMSM_GET(IMSM)                                                  \
         ({                                                              \
-                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                                                                         \
                 (elt_t_ *)imsm_get(ctx_, &imsm_->imsm);                 \
@@ -69,8 +57,8 @@
 
 #define IMSM_PUT(IMSM, OBJ)                                             \
         ({                                                              \
-                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
                 elt_t_* ptr_ = (OBJ);                                   \
                                                                         \
@@ -98,3 +86,28 @@
                  IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__));     \
              imsm_unwind_##UNIQUE##_.scratch == 0;             \
              imsm_unwind_##UNIQUE##_.scratch = 1)
+
+#define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
+#define IMSM_PPOINT_(NAME, UNIQUE) \
+        ({                         \
+                static const struct imsm_ppoint ppoint_##UNIQUE = {     \
+                        .name = NAME,                                   \
+                        .function = __PRETTY_FUNCTION__,                \
+                        .file = __FILE__,                               \
+                        .lineno = __LINE__,                             \
+                        .unique = UNIQUE,                               \
+                };                                                      \
+                                                                        \
+                &ppoint_##UNIQUE;                                       \
+        })
+
+#define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_((NAME), ##__VA_ARGS__, 0)
+#define IMSM_PPOINT_RECORD_(NAME, ITER, ...)    \
+        ((struct imsm_ppoint_record) {          \
+                .ppoint = IMSM_PPOINT(NAME),    \
+                .iteration = (ITER),            \
+         })
+
+#define IMSM_INDEX(NAME, ...)                                      \
+        (imsm_index((IMSM_CTX_PTR_VAR),                            \
+             IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))

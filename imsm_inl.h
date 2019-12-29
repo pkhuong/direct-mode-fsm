@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 /*
  * Full slow path for slab allocation.
  */
@@ -55,6 +57,33 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
         if (__builtin_expect(free_index == 0 || ctx->imsm != imsm, 0))
                 imsm_put_cache_reload(ctx, imsm);
         return;
+}
+
+inline struct imsm_entry *
+imsm_entry_of(struct imsm_ctx *ctx, void *ptr)
+{
+        struct imsm_slab *slab = &ctx->imsm->slab;
+        uintptr_t arena_base = (uintptr_t)slab->arena;
+        uintptr_t address = (uintptr_t)ptr;
+
+        if ((address - arena_base) >= slab->arena_size)
+                return NULL;
+
+        return imsm_traverse(ctx, (address - arena_base) / slab->element_size);
+}
+
+inline struct imsm_entry *
+imsm_traverse(struct imsm_ctx *ctx, size_t i)
+{
+        struct imsm_slab *slab = &ctx->imsm->slab;
+        uintptr_t arena_base = (uintptr_t)slab->arena;
+        struct imsm_entry *ret;
+
+        if (i >= slab->element_count)
+                return NULL;
+
+        ret = (void *)(arena_base + i * slab->element_size);
+        return ((ret->version & 1) != 0) ? ret : NULL;
 }
 
 inline size_t

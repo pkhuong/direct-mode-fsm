@@ -55,3 +55,18 @@ imsm_put(struct imsm *imsm, struct imsm_entry *freed)
                 imsm_put_cache_reload(imsm);
         return;
 }
+
+inline size_t
+imsm_index(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
+{
+
+        /* If the record is the same, return the same state index. */
+        if (ctx->position.ppoint == record.ppoint &&
+            ctx->position.iteration == record.iteration)
+                /* Compensate for the post-increment. */
+                return ctx->position.index - 1;
+
+        ctx->position.iteration = record.iteration;
+        ctx->position.ppoint = record.ppoint;
+        return ctx->position.index++;
+}

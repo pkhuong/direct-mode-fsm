@@ -23,3 +23,6 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
         slab_init_freelist(&imsm->slab);
         return;
 }
+
+extern size_t imsm_index(struct imsm_ctx *ctx,
+    struct imsm_ppoint_record record);

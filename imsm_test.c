@@ -33,7 +33,7 @@ init(void)
 }
 
 void
-slab_get_put()
+slab_get_put(void)
 {
         struct echo_state *state[32];
 
@@ -50,7 +50,7 @@ slab_get_put()
 }
 
 void
-slab_get_put_tight()
+slab_get_put_tight(void)
 {
         static struct echo_imsm small_echo;
         static struct echo_state buf[2];
@@ -90,7 +90,7 @@ slab_get_put_tight()
 }
 
 void
-slab_get_empty()
+slab_get_empty(void)
 {
         static struct echo_imsm small_echo;
         static char buf[sizeof(struct echo_state) - 1];
@@ -106,6 +106,25 @@ slab_get_empty()
         return;
 }
 
+void
+ppoint(void)
+{
+        struct imsm_ctx ctx = {
+                &echo.imsm,
+        };
+
+        printf("entry: %zu\n", IMSM_INDEX(&ctx, "entry"));
+        printf("next: %zu\n", IMSM_INDEX(&ctx, "next"));
+
+        for (size_t i = 0; i < 10; i++) {
+                for (size_t j = 0; j < 2; j++) {
+                        printf("loop: %zu\n", IMSM_INDEX(&ctx, "loop", i));
+                }
+        }
+
+        printf("out: %zu\n", IMSM_INDEX(&ctx, "out"));
+}
+
 int
 main()
 {
@@ -114,5 +133,6 @@ main()
         slab_get_put();
         slab_get_put_tight();
         slab_get_empty();
+        ppoint();
         return 0;
 }

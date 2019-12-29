@@ -21,6 +21,42 @@ struct imsm_entry {
 };
 
 /*
+ * We use statically allocated imsm program points to map queue
+ * operations to program states.
+ *
+ * Only their pointer identity matters; the fields only exist for
+ * pretty printing and debugging.
+ *
+ * Obtain a reference to one with IMSM_PPOINT(NAME).
+ */
+struct imsm_ppoint {
+        /* The `name` should be a domain-specific description. */
+        const char *name;
+        /* `function` should be populated with `__PRETTY_FUNCTION__`. */
+        const char *function;
+        /* `file` should be populated with `__FILE__`. */
+        const char *file;
+        /* `line` should be populated with `__LINE__`. */
+        size_t lineno;
+        /*
+         * `unique` can be used to make program points on the same
+         * line look different.
+         */
+        size_t unique;
+};
+
+/*
+ * We can update the state index visiting a new program point.
+ *
+ * Obtain one (by value) with IMSM_PPOINT_RECORD(NAME, ITERATION?).
+ */
+struct imsm_ppoint_record {
+        __uint128_t iteration;
+        const struct imsm_ppoint *ppoint;
+        size_t index;
+};
+
+/*
  * This base struct hold the global information for one immediate mode
  * state machine.  Use the IMSM(IMSM_TYPE_NAME, STATE_TYPE_NAME) macro
  * to declare a type-safe version of this struct.
@@ -37,6 +73,7 @@ struct imsm {
  */
 struct imsm_ctx {
         struct imsm *imsm;
+        struct imsm_ppoint_record position;
 };
 
 /*
@@ -63,5 +100,14 @@ inline struct imsm_entry *imsm_get(struct imsm *);
  * See IMSM_GET for a type-safe version.
  */
 inline void imsm_put(struct imsm *, struct imsm_entry *);
+
+/*
+ * Returns the state index for this program point record.  This value
+ * increases monotonically, unless we revisit the same program point
+ * twice in a row.
+ *
+ * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
+ */
+inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
 
 #include "imsm_inl.h"

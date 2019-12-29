@@ -2,6 +2,30 @@
 
 #include <assert.h>
 
+#define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
+#define IMSM_PPOINT_(NAME, UNIQUE) \
+        ({                         \
+                static const struct imsm_ppoint ppoint_##UNIQUE = {     \
+                        .name = NAME,                                   \
+                        .function = __PRETTY_FUNCTION__,                \
+                        .file = __FILE__,                               \
+                        .lineno = __LINE__,                             \
+                        .unique = UNIQUE,                               \
+                };                                                      \
+                                                                        \
+                &ppoint_##UNIQUE;                                       \
+        })
+
+#define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_((NAME), ##__VA_ARGS__, 0)
+#define IMSM_PPOINT_RECORD_(NAME, ITER, ...)    \
+        ((struct imsm_ppoint_record) {          \
+                .ppoint = IMSM_PPOINT(NAME),    \
+                .iteration = (ITER),            \
+         })
+
+#define IMSM_INDEX(CTX, NAME, ...) \
+        (imsm_index((CTX), IMSM_PPOINT_RECORD((NAME), ##__VA_ARGS__)))
+
 #define IMSM(TYNAME, ELTYPE)                                    \
         struct TYNAME {                                         \
                 union {                                         \

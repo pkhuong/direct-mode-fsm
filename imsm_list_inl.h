@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <stddef.h>
 #include <sys/queue.h>
 
 struct imsm_list_header {
@@ -14,9 +15,12 @@ struct imsm_list_header {
 inline size_t
 (imsm_list_size)(void **buf)
 {
-        struct imsm_list_header *header =
-            (void *)((char *)buf) - sizeof(struct imsm_list_header);
+        struct imsm_list_header *header;
 
+        if (buf == NULL)
+                return 0;
+
+        header = (void *)((char *)buf) - sizeof(struct imsm_list_header);
         return header->size;
 }
 
@@ -35,15 +39,21 @@ inline bool
 inline size_t
 (imsm_list_capacity)(void **buf)
 {
-        struct imsm_list_header *header =
-            (void *)((char *)buf) - sizeof(struct imsm_list_header);
+        struct imsm_list_header *header;
 
+        if (buf == NULL)
+                return 0;
+
+        header = (void *)((char *)buf) - sizeof(struct imsm_list_header);
         return (1ULL << header->capacity_index) - 2;
 }
 
 inline uint64_t *
 (imsm_list_aux)(void **buf)
 {
+
+        if (buf == NULL)
+                return NULL;
 
         return (uint64_t *)(buf + imsm_list_capacity(buf));
 }

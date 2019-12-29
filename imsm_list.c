@@ -10,6 +10,8 @@ extern bool (imsm_list_set_size)(void **, size_t);
 extern size_t (imsm_list_capacity)(void **);
 extern uint64_t *(imsm_list_aux)(void **);
 extern bool (imsm_list_push)(void **, void *ptr, uint64_t aux);
+extern void **imsm_list_get(struct imsm_list_cache *, size_t capacity);
+extern void imsm_list_put(struct imsm_list_cache *, void **list);
 
 static void
 cache_head_deinit(struct imsm_list_cache_head *head)

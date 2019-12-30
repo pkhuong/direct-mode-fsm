@@ -10,6 +10,30 @@
 
 #include "imsm_slab.inc"
 
+#define IMSM_MAX_REGISTERED 1024
+
+static struct {
+        size_t registered;
+        struct imsm **list;
+} imsm_list;
+
+static void
+imsm_register(struct imsm *imsm)
+{
+
+        if (imsm_list.list == NULL) {
+                imsm_list.list =
+                    calloc(IMSM_MAX_REGISTERED, sizeof(*imsm_list.list));
+                assert(imsm_list.list != NULL && "Static allocation failed.");
+        }
+
+        assert(imsm_list.registered < IMSM_MAX_REGISTERED &&
+            "Too many static imsm registered");
+        imsm->global_index = imsm_list.registered;
+        imsm_list.list[imsm_list.registered++] = imsm;
+        return;
+}
+
 void
 imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
     void (*poll_fn)(struct imsm_ctx *))
@@ -23,6 +47,7 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
         imsm->slab.element_size = elsize;
 
         slab_init_freelist(&imsm->slab);
+        imsm_register(imsm);
         return;
 }
 

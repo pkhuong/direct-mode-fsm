@@ -31,6 +31,7 @@ struct imsm_entry {
  * to declare a type-safe version of this struct.
  */
 struct imsm {
+        size_t global_index;
         struct imsm_slab slab;
         void (*poll_fn)(struct imsm_ctx *);
 };

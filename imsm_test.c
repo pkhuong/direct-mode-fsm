@@ -217,7 +217,7 @@ codec_ref(void)
         IMSM_CTX_PTR(&ctx);
         state = IMSM_GET(&echo);
 
-        ref = IMSM_REF(state);
+        ref = IMSM_REFER(state);
         assert(ref.bits != 0);
         assert(&echo.imsm == imsm_deref_machine(ref));
         assert(state == imsm_deref(ref));

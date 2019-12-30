@@ -71,7 +71,7 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
  * Returns a packed reference to an imsm and a pointer managed by that
  * state machine, or a NULL reference on failure.
  */
-struct imsm_ref imsm_ref(struct imsm_ctx *, void *);
+struct imsm_ref imsm_refer(struct imsm_ctx *, void *);
 
 /*
  * Returns the state machine encoded in the reference, if any.

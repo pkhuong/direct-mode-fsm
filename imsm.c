@@ -12,6 +12,13 @@
 
 #define IMSM_MAX_REGISTERED 1024
 
+#define IMSM_ENCODING_MULTIPLIER ((1ULL << 31) + 1)
+#define IMSM_DECODING_MULTIPLIER 4611686016279904257ULL
+
+static_assert(
+    (uint64_t)IMSM_ENCODING_MULTIPLIER * IMSM_DECODING_MULTIPLIER == 1,
+    "The encoding / decoding multipliers must be inverses.");
+
 union imsm_encoded_reference {
         uint64_t bits;
         struct {
@@ -65,7 +72,7 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
 }
 
 struct imsm_ref
-imsm_ref(struct imsm_ctx *ctx, void *object)
+imsm_refer(struct imsm_ctx *ctx, void *object)
 {
         struct imsm *imsm = ctx->imsm;
         struct imsm_ref ret = { 0 };
@@ -94,14 +101,16 @@ imsm_ref(struct imsm_ctx *ctx, void *object)
         encoded.arena_offset = (uintptr_t)object - arena_base;
         encoded.version = header->version >> 1;
 
-        ret.bits = encoded.bits;
+        ret.bits = encoded.bits * IMSM_ENCODING_MULTIPLIER;
         return ret;
 }
 
 struct imsm *
 imsm_deref_machine(struct imsm_ref ref)
 {
-        union imsm_encoded_reference encoded = { .bits = ref.bits };
+        union imsm_encoded_reference encoded = {
+                .bits = ref.bits * IMSM_DECODING_MULTIPLIER
+        };
 
         if (encoded.global_index >= IMSM_MAX_REGISTERED)
                 return NULL;
@@ -112,7 +121,9 @@ imsm_deref_machine(struct imsm_ref ref)
 void *
 imsm_deref(struct imsm_ref ref)
 {
-        union imsm_encoded_reference encoded = { .bits = ref.bits };
+        union imsm_encoded_reference encoded = {
+                .bits = ref.bits * IMSM_DECODING_MULTIPLIER
+        };
         size_t element_size;
         size_t offset;
         size_t header_offset;

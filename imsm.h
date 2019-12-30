@@ -10,12 +10,12 @@
 #include "imsm_list.h"
 #include "imsm_wrapper.h"
 
+struct imsm_ctx;
+
 enum imsm_notification {
         IMSM_NOTIFICATION_NONE = 0,
         IMSM_NOTIFICATION_WAKE,
 };
-
-struct imsm_ctx;
 
 /*
  * The first field in any IMSM state struct must be a `imsm_entry`.
@@ -25,7 +25,10 @@ struct imsm_entry {
         uint32_t version;
         /* UINT16_MAX means no queue. */
         uint16_t queue_id;
-        /* XXX: needs more range here. */
+        /*
+         * XXX: needs more range here... make this 16 bytes?  Could
+         * also use the bytes for timeouts / exponential backoff.
+         */
         uint8_t offset;
         uint8_t wakeup_pending;
 };
@@ -82,11 +85,6 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
 struct imsm_ref imsm_refer(struct imsm_ctx *, void *);
 
 /*
- * Returns the state machine encoded in the reference, if any.
- */
-struct imsm *imsm_deref_machine(struct imsm_ref);
-
-/*
  * Returns the object encoded in the reference, if any.
  */
 void *imsm_deref(struct imsm_ref);
@@ -128,6 +126,28 @@ inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
 inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
 
 /*
+ * Augments the imsm context with a LIFO program point context record.
+ * The augmentation should be unwound with `imsm_region_pop` in LIFO
+ * order.
+ *
+ * See IMSM_REGION(CTX, NAME, ITER?) and WITH_IMSM_REGION(CTX, NAME, ITER?)
+ * for convenient wrappers.
+ */
+inline struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
+    struct imsm_ppoint_record);
+
+inline void imsm_region_pop(const struct imsm_unwind_record *);
+
+/*
+ * Exposed only for testing.
+ */
+
+/*
+ * Returns the state machine encoded in the reference, if any.
+ */
+struct imsm *imsm_deref_machine(struct imsm_ref);
+
+/*
  * Accepts an interior pointer to an element of the `imsm_ctx`'s slab,
  * and returns a pointer to the entry header, or NULL if there is no
  * such element in the slab.
@@ -148,18 +168,4 @@ inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);
  * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
  */
 inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
-
-/*
- * Augments the imsm context with a LIFO program point context record.
- * The augmentation should be unwound with `imsm_region_pop` in LIFO
- * order.
- *
- * See IMSM_REGION(CTX, NAME, ITER?) and WITH_IMSM_REGION(CTX, NAME, ITER?)
- * for convenient wrappers.
- */
-inline struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
-    struct imsm_ppoint_record);
-
-inline void imsm_region_pop(const struct imsm_unwind_record *);
-
 #include "imsm_inl.h"

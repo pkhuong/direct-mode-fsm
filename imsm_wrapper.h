@@ -119,6 +119,10 @@
              imsm_unwind_##UNIQUE##_.scratch == 0;             \
              imsm_unwind_##UNIQUE##_.scratch = 1)
 
+/*
+ * Only exposed for testing.
+ */
+
 #define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
 #define IMSM_PPOINT_(NAME, UNIQUE) \
         ({                         \

@@ -12,6 +12,15 @@
 
 #define IMSM_MAX_REGISTERED 1024
 
+union imsm_encoded_reference {
+        uint64_t bits;
+        struct {
+                uint64_t global_index : 12;
+                uint64_t arena_offset : 36;
+                uint64_t version : 16;
+        };
+};
+
 static struct {
         size_t registered;
         struct imsm **list;
@@ -27,10 +36,11 @@ imsm_register(struct imsm *imsm)
                 assert(imsm_list.list != NULL && "Static allocation failed.");
         }
 
-        assert(imsm_list.registered < IMSM_MAX_REGISTERED &&
+        assert(imsm_list.registered + 1 < IMSM_MAX_REGISTERED &&
             "Too many static imsm registered");
-        imsm->global_index = imsm_list.registered;
-        imsm_list.list[imsm_list.registered++] = imsm;
+        assert(imsm->global_index == 0 && "Double registration?!");
+        imsm->global_index = ++imsm_list.registered;
+        imsm_list.list[imsm_list.registered] = imsm;
         return;
 }
 
@@ -41,6 +51,9 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
 
         assert(imsm->poll_fn == NULL &&
             "imsm must be initialized exactly once");
+        if (arena_size > (1UL << 36))
+                arena_size = 1UL << 36;
+
         imsm->poll_fn = poll_fn;
         imsm->slab.arena = arena;
         imsm->slab.arena_size = arena_size;
@@ -49,6 +62,81 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
         slab_init_freelist(&imsm->slab);
         imsm_register(imsm);
         return;
+}
+
+struct imsm_ref
+imsm_ref(struct imsm_ctx *ctx, void *object)
+{
+        struct imsm *imsm = ctx->imsm;
+        struct imsm_ref ret = { 0 };
+        union imsm_encoded_reference encoded;
+        struct imsm_entry *header;
+        uintptr_t arena_base;
+        size_t arena_offset;
+
+        if (imsm == NULL ||
+            imsm->global_index >= IMSM_MAX_REGISTERED ||
+            imsm_list.list[imsm->global_index] != imsm)
+                return ret;
+
+        header = imsm_entry_of(ctx, object);
+        if (header == NULL)
+                return ret;
+
+        if ((header->version & 1) == 0)
+                return ret;
+
+        arena_base = (uintptr_t)imsm->slab.arena;
+        arena_offset = (uintptr_t)object - arena_base;
+        assert(arena_offset < (1UL << 36));
+
+        encoded.global_index = imsm->global_index;
+        encoded.arena_offset = (uintptr_t)object - arena_base;
+        encoded.version = header->version >> 1;
+
+        ret.bits = encoded.bits;
+        return ret;
+}
+
+struct imsm *
+imsm_deref_machine(struct imsm_ref ref)
+{
+        union imsm_encoded_reference encoded = { .bits = ref.bits };
+
+        if (encoded.global_index >= IMSM_MAX_REGISTERED)
+                return NULL;
+
+        return imsm_list.list[encoded.global_index];
+}
+
+void *
+imsm_deref(struct imsm_ref ref)
+{
+        union imsm_encoded_reference encoded = { .bits = ref.bits };
+        size_t element_size;
+        size_t offset;
+        size_t header_offset;
+        struct imsm *imsm;
+        struct imsm_entry *header;
+        void *ret;
+
+        imsm = imsm_deref_machine(ref);
+        if (imsm == NULL)
+                return NULL;
+
+        element_size = imsm->slab.element_size;
+        offset = encoded.arena_offset;
+        header_offset = element_size * (offset / element_size);
+        if (offset >= imsm->slab.arena_size)
+                return NULL;
+
+        ret = (void *)((char *)imsm->slab.arena + offset);
+        header = (void *)((char *)imsm->slab.arena + header_offset);
+        if ((header->version & 1) == 0 ||
+            (header->version >> 1) != encoded.version)
+                return NULL;
+
+        return ret;
 }
 
 static void

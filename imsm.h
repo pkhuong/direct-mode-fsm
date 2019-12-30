@@ -26,6 +26,16 @@ struct imsm_entry {
 };
 
 /*
+ * We can encode a reference to an imsm state object in 64 bits,
+ * including version information.
+ *
+ * All 0 is a special NULL reference.
+ */
+struct imsm_ref {
+        uint64_t bits;
+};
+
+/*
  * This base struct hold the global information for one immediate mode
  * state machine.  Use the IMSM(IMSM_TYPE_NAME, STATE_TYPE_NAME) macro
  * to declare a type-safe version of this struct.
@@ -56,6 +66,22 @@ struct imsm_ctx {
  */
 void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
     void (*poll_fn)(struct imsm_ctx *));
+
+/*
+ * Returns a packed reference to an imsm and a pointer managed by that
+ * state machine, or a NULL reference on failure.
+ */
+struct imsm_ref imsm_ref(struct imsm_ctx *, void *);
+
+/*
+ * Returns the state machine encoded in the reference, if any.
+ */
+struct imsm *imsm_deref_machine(struct imsm_ref);
+
+/*
+ * Returns the object encoded in the reference, if any.
+ */
+void *imsm_deref(struct imsm_ref);
 
 /*
  * Adds all records in `imsm_list_in` where the auxiliary value equals

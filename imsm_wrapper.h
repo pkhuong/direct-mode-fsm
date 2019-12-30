@@ -33,6 +33,8 @@
                     sizeof(elt_t_), (POLL_FN));                         \
         })
 
+#define IMSM_REF(OBJECT) (imsm_ref((IMSM_CTX_PTR_VAR), (OBJECT)))
+
 #define IMSM_STAGE(NAME, LIST_IN, AUX_MATCH)                    \
         IMSM_STAGE_IDX((NAME), 0, (LIST_IN), (AUX_MATCH))
 

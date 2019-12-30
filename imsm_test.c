@@ -178,10 +178,10 @@ ppoint(void)
 void
 stage_io(void)
 {
-        struct echo_state **in, **out;
         struct imsm_ctx ctx = {
                 &echo.imsm,
         };
+        struct echo_state **in, **out;
 
         IMSM_CTX_PTR(&ctx);
         in = IMSM_LIST_GET(struct echo_state, 2);
@@ -205,6 +205,25 @@ stage_io(void)
         return;
 }
 
+void
+codec_ref(void)
+{
+        struct imsm_ctx ctx = {
+                &echo.imsm,
+        };
+        struct echo_state *state;
+        struct imsm_ref ref;
+
+        IMSM_CTX_PTR(&ctx);
+        state = IMSM_GET(&echo);
+
+        ref = IMSM_REF(state);
+        assert(ref.bits != 0);
+        assert(&echo.imsm == imsm_deref_machine(ref));
+        assert(state == imsm_deref(ref));
+        return;
+}
+
 int
 main()
 {
@@ -215,5 +234,6 @@ main()
         slab_get_empty();
         ppoint();
         stage_io();
+        codec_ref();
         return 0;
 }

@@ -20,6 +20,8 @@ struct imsm_entry {
         uint32_t version;
         /* UINT16_MAX means no queue. */
         uint16_t queue_id;
+        /* XXX: needs more range here. */
+        uint8_t offset;
         uint8_t wakeup_pending;
 };
 
@@ -60,13 +62,10 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
  * and returns a list of all the values associated with that queue
  * that (may) have been woken.
  *
- * The values in and out of the stage must be `offset` away from the
- * `imsm_entry` header.
- *
  * A NULL list is empty.
  */
 void **imsm_stage_io(struct imsm_ctx *, struct imsm_ppoint_record,
-     size_t offset, void **list_in, uint64_t aux_match);
+     void **list_in, uint64_t aux_match);
 
 /*
  * Allocates one object from the `imsm`'s slab, or NULL if the slab

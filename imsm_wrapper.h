@@ -38,7 +38,7 @@
 
 #define IMSM_STAGE_IDX(NAME, INDEX, LIST_IN, AUX_MATCH)                 \
         ({                                                              \
-                __typeof__(**(LIST_IN)) list_in_ = (LIST_IN);           \
+                __typeof__(**(LIST_IN)) **list_in_ = (LIST_IN);         \
                 struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                                                                         \
                 (__typeof__(list_in_))imsm_stage_io(                    \
@@ -64,6 +64,15 @@
                                                                         \
                 /* We know there is an imsm_entry at offset 0. */       \
                 imsm_put(ctx_, &imsm_->imsm, (struct imsm_entry *)ptr_); \
+        })
+
+#define IMSM_LIST_GET(TYPE, CAPACITY)                                   \
+        ((TYPE **)imsm_list_get(&(IMSM_CTX_PTR_VAR)->cache, (CAPACITY)))
+
+#define IMSM_LIST_PUT(LIST)                                             \
+        ({                                                              \
+                __typeof__(**(LIST)) **list_ = (LIST);                  \
+                imsm_list_put(&(IMSM_CTX_PTR_VAR)->cache, (void **)list_); \
         })
 
 #define IMSM_REGION(NAME, ...)                                          \

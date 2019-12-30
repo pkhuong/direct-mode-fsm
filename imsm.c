@@ -26,30 +26,36 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
         return;
 }
 
-void **
-imsm_stage_io(struct imsm_ctx *ctx, struct imsm_ppoint_record ppoint,
-    size_t offset, void **list_in, uint64_t aux_match)
+static void
+imsm_stage_in(struct imsm_ctx *ctx, size_t ppoint_index,
+    void **list_in, uint64_t aux_match)
 {
-        size_t ppoint_index;
-        void **ret;
 
-        ppoint_index = imsm_index(ctx, ppoint);
-        assert(ppoint_index < UINT16_MAX && "Queue id too high");
-
-        /* Register new list entries in the queue. */
         for (size_t i = 0, n = imsm_list_size(list_in); i < n; i++) {
-                if (list_in[i] != NULL &&
-                    imsm_list_aux(list_in)[i] == aux_match) {
-                        struct imsm_entry *entry;
+                struct imsm_entry *entry;
+                size_t offset;
 
-                        entry = imsm_entry_of(ctx, list_in[i]);
-                        assert(entry != NULL);
-                        entry->queue_id = ppoint_index;
-                        entry->wakeup_pending = 1;
-                }
+                if (list_in[i] == NULL ||
+                    imsm_list_aux(list_in)[i] != aux_match)
+                        continue;
+
+                entry = imsm_entry_of(ctx, list_in[i]);
+                assert(entry != NULL);
+
+                offset = (char *)list_in[i] - (char *)entry;
+                assert(offset <= UINT8_MAX);
+                entry->queue_id = ppoint_index;
+                entry->offset = offset;
+                entry->wakeup_pending = 1;
         }
 
-        ret = imsm_list_get(&ctx->cache, ctx->imsm->slab.element_count);
+        return;
+}
+
+static void
+imsm_stage_out(void **list_out, struct imsm_ctx *ctx, size_t ppoint_index)
+{
+
         for (size_t i = 0, n = ctx->imsm->slab.element_count; i < n; i++) {
                 struct imsm_entry *entry;
 
@@ -58,13 +64,33 @@ imsm_stage_io(struct imsm_ctx *ctx, struct imsm_ppoint_record ppoint,
                     entry->queue_id == ppoint_index &&
                     entry->wakeup_pending != 0) {
                         bool success;
-                        void *member = (char *)entry + offset;
+                        void *member = (char *)entry + entry->offset;
 
-                        success = imsm_list_push(ret, member, 0);
+                        entry->wakeup_pending = 0;
+                        success = imsm_list_push(list_out, member, 0);
                         assert(success);
                 }
         }
 
+        return;
+}
+
+void **
+imsm_stage_io(struct imsm_ctx *ctx, struct imsm_ppoint_record ppoint,
+    void **list_in, uint64_t aux_match)
+{
+        size_t ppoint_index;
+        void **ret;
+
+        ppoint_index = imsm_index(ctx, ppoint);
+        assert(ppoint_index < UINT16_MAX && "Queue id too high");
+
+        /* Register new list entries in the queue. */
+        imsm_stage_in(ctx, ppoint_index, list_in, aux_match);
+
+        ret = imsm_list_get(&ctx->cache, ctx->imsm->slab.element_count);
+        /* Populate `ret` with all active entries. */
+        imsm_stage_out(ret, ctx, ppoint_index);
         return ret;
 }
 

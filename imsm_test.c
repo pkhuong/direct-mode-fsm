@@ -175,6 +175,34 @@ ppoint(void)
         printf("out: %zu\n", IMSM_INDEX("out"));
 }
 
+void
+stage_io(void)
+{
+        struct echo_state **in, **out;
+        struct imsm_ctx ctx = {
+                &echo.imsm,
+        };
+
+        IMSM_CTX_PTR(&ctx);
+        in = IMSM_LIST_GET(struct echo_state, 2);
+        imsm_list_push(in, IMSM_GET(&echo), 0);
+        imsm_list_push(in, IMSM_GET(&echo), 0);
+
+        in[0]->in_count = 1;
+        in[1]->in_count = 2;
+
+        for (size_t rep = 0; rep < 2; rep++) {
+                if (rep > 0)
+                        in = NULL;
+
+                out = IMSM_STAGE("test", in, 0);
+                for (size_t i = 0; i < imsm_list_size(out); i++)
+                        printf("%zu %p %zu\n", i, out[i], out[i]->in_count);
+        }
+
+        return;
+}
+
 int
 main()
 {
@@ -184,5 +212,6 @@ main()
         slab_get_put_tight();
         slab_get_empty();
         ppoint();
+        stage_io();
         return 0;
 }

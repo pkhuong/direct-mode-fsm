@@ -8,7 +8,9 @@
  * setup such a binding.
  */
 #define IMSM_CTX_PTR_VAR imsm_ctx_ptr_
-#define IMSM_CTX_PTR(CTX) struct imsm_ctx *const IMSM_CTX_PTR_VAR = (CTX)
+#define IMSM_CTX_PTR(CTX)                                               \
+        struct imsm_ctx *const __attribute__((__unused__))              \
+                IMSM_CTX_PTR_VAR = (CTX)
 
 #define IMSM(TYNAME, ELTYPE)                                    \
         struct TYNAME {                                         \

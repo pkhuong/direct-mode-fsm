@@ -181,6 +181,7 @@ stage_io(void)
         struct imsm_ctx ctx = {
                 &echo.imsm,
         };
+        IMSM_NOTIFIER(, int) notifier = { 0 };
         struct echo_state **in, **out;
 
         IMSM_CTX_PTR(&ctx);
@@ -191,9 +192,11 @@ stage_io(void)
         in[0]->in_count = 1;
         in[1]->in_count = 2;
 
+        notifier.ref = IMSM_REFER(&in[1]->in_count);
+
         for (size_t rep = 0; rep < 2; rep++) {
                 if (rep > 0) {
-                        in[1]->header.wakeup_pending = 1;
+                        IMSM_NOTIFY(notifier, 42);
                         in = NULL;
                 }
 

@@ -10,6 +10,11 @@
 #include "imsm_list.h"
 #include "imsm_wrapper.h"
 
+enum imsm_notification {
+        IMSM_NOTIFICATION_NONE = 0,
+        IMSM_NOTIFICATION_WAKE,
+};
+
 struct imsm_ctx;
 
 /*
@@ -70,6 +75,9 @@ void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
 /*
  * Returns a packed reference to an imsm and a pointer managed by that
  * state machine, or a NULL reference on failure.
+ *
+ * Packing all that data in 64 bits makes it easier to interface with
+ * epoll or kqueue.
  */
 struct imsm_ref imsm_refer(struct imsm_ctx *, void *);
 
@@ -82,6 +90,12 @@ struct imsm *imsm_deref_machine(struct imsm_ref);
  * Returns the object encoded in the reference, if any.
  */
 void *imsm_deref(struct imsm_ref);
+
+/*
+ * Wakes the imsm managed object in the reference if any...
+ * unless the notification type is NONE.
+ */
+void imsm_notify(struct imsm_ref, enum imsm_notification);
 
 /*
  * Adds all records in `imsm_list_in` where the auxiliary value equals

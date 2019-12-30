@@ -51,6 +51,14 @@ inline void **imsm_list_get(struct imsm_list_cache *, size_t capacity);
 
 inline void imsm_list_put(struct imsm_list_cache *, void **list);
 
+#define imsm_list_foreach(VAR, BUF)                                      \
+        for (__typeof__(**(BUF))                                         \
+             **VAR##_list_ = (BUF),                                      \
+             **VAR##_sentinel_ = VAR##_list_ + imsm_list_size(VAR##_list_), \
+             *VAR;                                                       \
+             VAR##_list_ < VAR##_sentinel_ && ((VAR = *VAR##_list_), 1); \
+             VAR##_list_++)
+
 #define imsm_list_size(BUF)                              \
         ({                                               \
                 __typeof__(**(BUF)) **imsm_buf_ = (BUF); \

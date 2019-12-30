@@ -200,7 +200,7 @@ stage_io(void)
                         in = NULL;
                 }
 
-                out = IMSM_STAGE("test", in, 0);
+                out = IMSM_STAGE(("test", 2), in, 0);
                 for (size_t i = 0; i < imsm_list_size(out); i++)
                         printf("%zu %p %zu\n", i, out[i], out[i]->in_count);
         }

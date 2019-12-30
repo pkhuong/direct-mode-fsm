@@ -35,17 +35,18 @@
 
 #define IMSM_REFER(OBJECT) (imsm_refer((IMSM_CTX_PTR_VAR), (OBJECT)))
 
-#define IMSM_STAGE(NAME, LIST_IN, AUX_MATCH)                    \
-        IMSM_STAGE_IDX((NAME), 0, (LIST_IN), (AUX_MATCH))
+/*
+ * LOC_INFO is either a NAME, or (NAME, ITERATION)
+ */
 
-#define IMSM_STAGE_IDX(NAME, INDEX, LIST_IN, AUX_MATCH)                 \
+#define IMSM_STAGE(LOC_INFO, LIST_IN, AUX_MATCH)                        \
         ({                                                              \
                 __typeof__(**(LIST_IN)) **list_in_ = (LIST_IN);         \
                 struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                                                                         \
                 (__typeof__(list_in_))imsm_stage_io(                    \
-                        ctx_, IMSM_PPOINT_RECORD((NAME), (INDEX)),      \
-                        (void **)list_in_, (AUX_MATCH));                \
+                    ctx_, IMSM_PPOINT_RECORD(IMSM_UNPAREN(LOC_INFO)),   \
+                    (void **)list_in_, (AUX_MATCH));                    \
         })
 
 #define IMSM_GET(IMSM)                                                  \
@@ -99,8 +100,15 @@
              imsm_unwind_##UNIQUE##_.scratch = 1)
 
 /*
- * Only exposed for testing.
+ * Internals that shouldn't be used directly.
  */
+
+/* https://www.mikeash.com/pyblog/friday-qa-2015-03-20-preprocessor-abuse-and-optional-parentheses.html */
+#define IMSM_UNPAREN(X) IMSM_PASTE(IMSM_NOTHING_, IMSM_EXTRACT X)
+#define IMSM_EXTRACT(...) IMSM_EXTRACT __VA_ARGS__
+#define IMSM_PASTE(X, ...) IMSM_PASTE_(X, __VA_ARGS__)
+#define IMSM_PASTE_(X, ...) X ## __VA_ARGS__
+#define IMSM_NOTHING_IMSM_EXTRACT
 
 #define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
 #define IMSM_PPOINT_(NAME, UNIQUE) \
@@ -116,7 +124,7 @@
                 &ppoint_##UNIQUE;                                       \
         })
 
-#define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_((NAME), ##__VA_ARGS__, 0)
+#define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_(NAME, ##__VA_ARGS__, 0)
 #define IMSM_PPOINT_RECORD_(NAME, ITER, ...)    \
         ((struct imsm_ppoint_record) {          \
                 .ppoint = IMSM_PPOINT(NAME),    \

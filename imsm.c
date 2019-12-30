@@ -12,6 +12,8 @@
 
 #define IMSM_MAX_REGISTERED 1024
 
+#define VERSION_NUMBER_BITS 12
+
 #define IMSM_ENCODING_MULTIPLIER ((1ULL << 31) + 1)
 #define IMSM_DECODING_MULTIPLIER 4611686016279904257ULL
 
@@ -23,8 +25,8 @@ union imsm_encoded_reference {
         uint64_t bits;
         struct {
                 uint64_t global_index : 12;
-                uint64_t arena_offset : 36;
-                uint64_t version : 16;
+                uint64_t object_index : 40;
+                uint64_t version : VERSION_NUMBER_BITS;
         };
 };
 
@@ -79,13 +81,15 @@ imsm_refer(struct imsm_ctx *ctx, void *object)
         union imsm_encoded_reference encoded;
         struct imsm_entry *header;
         uintptr_t arena_base;
-        size_t arena_offset;
+        size_t element_size;
+        size_t object_index;
 
         if (imsm == NULL ||
             imsm->global_index >= IMSM_MAX_REGISTERED ||
             imsm_list.list[imsm->global_index] != imsm)
                 return ret;
 
+        element_size = imsm->slab.element_size;
         header = imsm_entry_of(ctx, object);
         if (header == NULL)
                 return ret;
@@ -94,11 +98,11 @@ imsm_refer(struct imsm_ctx *ctx, void *object)
                 return ret;
 
         arena_base = (uintptr_t)imsm->slab.arena;
-        arena_offset = (uintptr_t)object - arena_base;
-        assert(arena_offset < (1UL << 36));
+        object_index = ((uintptr_t)object - arena_base) / element_size;
+        assert(object_index < (1UL << 40));
 
         encoded.global_index = imsm->global_index;
-        encoded.arena_offset = (uintptr_t)object - arena_base;
+        encoded.object_index = object_index;
         encoded.version = header->version >> 1;
 
         ret.bits = encoded.bits * IMSM_ENCODING_MULTIPLIER;
@@ -119,73 +123,53 @@ imsm_deref_machine(struct imsm_ref ref)
         return imsm_list.list[encoded.global_index];
 }
 
-static struct imsm_entry *
-entry_of(const struct imsm *imsm, void *interior_pointer)
-{
-        uintptr_t arena_base = (uintptr_t)imsm->slab.arena;
-        size_t element_size = imsm->slab.element_size;
-        size_t offset = (uintptr_t)interior_pointer - arena_base;
-        size_t header_offset = element_size * (offset / element_size);
-
-        return (struct imsm_entry *)(arena_base + header_offset);
-}
-
-void *
+struct imsm_entry *
 imsm_deref(struct imsm_ref ref)
 {
+        static const size_t version_mask = (1UL << VERSION_NUMBER_BITS) - 1;
         union imsm_encoded_reference encoded = {
                 .bits = ref.bits * IMSM_DECODING_MULTIPLIER
         };
-        size_t offset;
         struct imsm *imsm;
         struct imsm_entry *header;
-        void *ret;
+        size_t element_size;
+        size_t offset;
 
         imsm = imsm_deref_machine(ref);
         if (imsm == NULL)
                 return NULL;
 
-        offset = encoded.arena_offset;
-        if (offset >= imsm->slab.arena_size)
+        element_size = imsm->slab.element_size;
+        offset = encoded.object_index;
+        if (offset >= imsm->slab.element_count)
                 return NULL;
 
-        ret = (void *)((char *)imsm->slab.arena + offset);
-        header = entry_of(imsm, ret);
+        header = (void *)((char *)imsm->slab.arena + offset * element_size);
         if ((header->version & 1) == 0 ||
-            (header->version >> 1) != encoded.version)
+            ((header->version >> 1) & version_mask) != encoded.version)
                 return NULL;
 
-        return ret;
+        return header;
 }
 
-void
-imsm_notify(struct imsm_ref ref, enum imsm_notification notification)
+bool
+imsm_notify(struct imsm_ref ref)
 {
+        struct imsm *machine;
+        struct imsm_entry *header;
 
         if (ref.bits == 0)
-                return;
+                return true;
 
-        switch (notification) {
-        case IMSM_NOTIFICATION_WAKE: {
-                struct imsm *machine;
-                void *decoded;
-                struct imsm_entry *header;
+        machine = imsm_deref_machine(ref);
+        if (machine == NULL)
+                return false;
 
-                machine = imsm_deref_machine(ref);
-                decoded = imsm_deref(ref);
-                assert(machine != NULL);
-                assert(decoded != NULL);
-
-                header = entry_of(machine, decoded);
+        header = imsm_deref(ref);
+        if (header != NULL)
                 header->wakeup_pending = 1;
-                return;
-        }
 
-        case IMSM_NOTIFICATION_NONE:
-        default:
-                return;
-
-        }
+        return true;
 }
 
 static void

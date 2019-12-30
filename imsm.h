@@ -12,11 +12,6 @@
 
 struct imsm_ctx;
 
-enum imsm_notification {
-        IMSM_NOTIFICATION_NONE = 0,
-        IMSM_NOTIFICATION_WAKE,
-};
-
 /*
  * The first field in any IMSM state struct must be a `imsm_entry`.
  */
@@ -35,7 +30,8 @@ struct imsm_entry {
 
 /*
  * We can encode a reference to an imsm state object in 64 bits,
- * including version information.
+ * including version information.  This encoding is only safe for
+ * potentially spurious wake-ups, as the version data is minimal.
  *
  * All 0 is a special NULL reference.
  */
@@ -87,13 +83,15 @@ struct imsm_ref imsm_refer(struct imsm_ctx *, void *);
 /*
  * Returns the object encoded in the reference, if any.
  */
-void *imsm_deref(struct imsm_ref);
+struct imsm_entry *imsm_deref(struct imsm_ref);
 
 /*
- * Wakes the imsm managed object in the reference if any...
- * unless the notification type is NONE.
+ * Wakes the imsm managed object in the reference if any.
+ *
+ * Returns true iff the reference was valid or NULL, false if
+ * definitely corrupt.
  */
-void imsm_notify(struct imsm_ref, enum imsm_notification);
+bool imsm_notify(struct imsm_ref);
 
 /*
  * Adds all records in `imsm_list_in` where the auxiliary value equals
@@ -121,7 +119,7 @@ inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
  * NULL pointers, but will abort on any other pointer not allocated
  * by the `imsm`.
  *
- * See IMSM_GET for a type-safe version.
+ * See IMSM_PUT for a type-safe version.
  */
 inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
 
@@ -168,4 +166,5 @@ inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);
  * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
  */
 inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
+
 #include "imsm_inl.h"

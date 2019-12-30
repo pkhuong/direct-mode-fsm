@@ -18,12 +18,6 @@
                 };                                              \
         }
 
-#define IMSM_NOTIFIER(TYNAME, ...)                                      \
-        struct TYNAME {                                                 \
-                enum imsm_notification (*notifier)(struct imsm_ref, ##__VA_ARGS__); \
-                struct imsm_ref ref;                                    \
-        }
-
 #define IMSM_INIT(IMSM, HEADER, ARENA, ARENA_SIZE, POLL_FN)             \
         ({                                                              \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
@@ -31,7 +25,7 @@
                                                                         \
                 static_assert(                                          \
                     __builtin_offsetof(elt_t_, HEADER) == 0,            \
-                    "The slab_entry header must be the first member."); \
+                    "The imsm_entry header must be the first member."); \
                 static_assert(__builtin_types_compatible_p(             \
                     __typeof__(((elt_t_*)NULL)->HEADER), struct imsm_entry), \
                    "The header member must be a struct imsm_entry");    \
@@ -40,21 +34,6 @@
         })
 
 #define IMSM_REFER(OBJECT) (imsm_refer((IMSM_CTX_PTR_VAR), (OBJECT)))
-
-#define IMSM_NOTIFY(NOTIFIER, ...)                                      \
-        ({                                                              \
-                __typeof__(NOTIFIER) notifier_ = (NOTIFIER);            \
-                enum imsm_notification notification_type_ =             \
-                    IMSM_NOTIFICATION_WAKE;                             \
-                                                                        \
-                if (notifier_.notifier != NULL)                         \
-                        notification_type_ =                            \
-                            notifier_.notifier(notifier_.ref, ##__VA_ARGS__); \
-                                                                        \
-                if (notification_type_ != IMSM_NOTIFICATION_NONE)       \
-                        imsm_notify(notifier_.ref, notification_type_); \
-                (void)0;                                                \
-        })
 
 #define IMSM_STAGE(NAME, LIST_IN, AUX_MATCH)                    \
         IMSM_STAGE_IDX((NAME), 0, (LIST_IN), (AUX_MATCH))

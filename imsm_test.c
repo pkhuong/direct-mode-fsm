@@ -181,7 +181,7 @@ stage_io(void)
         struct imsm_ctx ctx = {
                 &echo.imsm,
         };
-        IMSM_NOTIFIER(, int) notifier = { 0 };
+        struct imsm_ref to_notify = { 0 };
         struct echo_state **in, **out;
 
         IMSM_CTX_PTR(&ctx);
@@ -192,11 +192,11 @@ stage_io(void)
         in[0]->in_count = 1;
         in[1]->in_count = 2;
 
-        notifier.ref = IMSM_REFER(&in[1]->in_count);
+        to_notify = IMSM_REFER(&in[1]->in_count);
 
         for (size_t rep = 0; rep < 2; rep++) {
                 if (rep > 0) {
-                        IMSM_NOTIFY(notifier, 42);
+                        imsm_notify(to_notify);
                         in = NULL;
                 }
 
@@ -223,7 +223,7 @@ codec_ref(void)
         ref = IMSM_REFER(state);
         assert(ref.bits != 0);
         assert(&echo.imsm == imsm_deref_machine(ref));
-        assert(state == imsm_deref(ref));
+        assert(&state->header == imsm_deref(ref));
         return;
 }
 

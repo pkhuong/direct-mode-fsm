@@ -192,8 +192,10 @@ stage_io(void)
         in[1]->in_count = 2;
 
         for (size_t rep = 0; rep < 2; rep++) {
-                if (rep > 0)
+                if (rep > 0) {
+                        in[1]->header.wakeup_pending = 1;
                         in = NULL;
+                }
 
                 out = IMSM_STAGE("test", in, 0);
                 for (size_t i = 0; i < imsm_list_size(out); i++)

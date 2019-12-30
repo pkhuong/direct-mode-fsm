@@ -375,11 +375,6 @@ echo_fn(struct imsm_ctx *ctx)
         done = print_newline(ctx, echoed);
 
         imsm_list_foreach(out, done) {
-                int r;
-
-                r = shutdown(out->fd, SHUT_RDWR);
-                if (r < 0)
-                        perror("shutdown");
                 close(out->fd);
                 IMSM_PUT(&echo, out);
         }

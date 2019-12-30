@@ -69,6 +69,7 @@ imsm_list_get_slow(struct imsm_list_cache *cache, size_t capacity_index)
         if (ret == NULL)
                 return NULL;
 
+        ret->capacity_index = capacity_index;
         if (capacity_index < per_size_limit) {
                 active = &cache->per_size[capacity_index].active;
                 if (cache->per_size[capacity_index].free.tqh_last == NULL)

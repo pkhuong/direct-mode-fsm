@@ -273,23 +273,31 @@ write_one_line(struct echo_state *state)
  *
  * `fully_read` are added to the the list of state machines ready to
  * write.
+ *
+ * Returns a list of all state machines have fully written their echo
+ * line.
  */
-static void
+static struct echo_state **
 echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
 {
-        struct echo_state **ready_to_write;
+        struct echo_state **ready_to_write, **ret;
         IMSM_CTX_PTR(ctx);
 
         IMSM_REGION("echo_line");
         ready_to_write = IMSM_STAGE("ready_to_write", fully_read, 0);
+        ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_write));
 
         imsm_list_foreach(current, ready_to_write) {
                 switch (write_one_line(current)) {
+                case IO_RESULT_DONE:
+                        imsm_list_push(ret, current, 0);
+                        break;
+
                 case IO_RESULT_RETRY:
                         epoll_arm(IMSM_REFER(current), current->fd,
                                   EPOLLOUT | EPOLLRDHUP);
+                        break;
 
-                case IO_RESULT_DONE:
                 case IO_RESULT_ABORT:
                 default:
                         close(current->fd);
@@ -298,7 +306,58 @@ echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
                 }
         }
 
-        return;
+        return ret;
+}
+
+static enum io_result
+print_one_newline(struct echo_state *state)
+{
+        static const char buf[1] = "\n";
+        ssize_t sent;
+
+        sent = send(state->fd, buf, sizeof(buf), MSG_DONTWAIT | MSG_NOSIGNAL);
+        if (sent < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                        return IO_RESULT_RETRY;
+
+                perror("send");
+                return IO_RESULT_ABORT;
+        }
+
+        return IO_RESULT_DONE;
+}
+
+static struct echo_state **
+print_newline(struct imsm_ctx *ctx, struct echo_state **fully_written)
+{
+        struct echo_state **ready_to_nl, **ret;
+
+        IMSM_CTX_PTR(ctx);
+
+        IMSM_REGION("print_newline");
+        ready_to_nl = IMSM_STAGE("ready_to_newline", fully_written, 0);
+        ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_nl));
+
+        imsm_list_foreach(current, ready_to_nl) {
+                switch (print_one_newline(current)) {
+                case IO_RESULT_DONE:
+                        imsm_list_push(ret, current, 0);
+                        break;
+
+                case IO_RESULT_RETRY:
+                        epoll_arm(IMSM_REFER(current), current->fd,
+                                  EPOLLOUT | EPOLLRDHUP);
+                        break;
+
+                case IO_RESULT_ABORT:
+                default:
+                        close(current->fd);
+                        IMSM_PUT(&echo, current);
+                        break;
+                }
+        }
+
+        return ret;
 }
 
 /*
@@ -307,12 +366,24 @@ echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
 static void
 echo_fn(struct imsm_ctx *ctx)
 {
-        struct echo_state **accepted, **fully_read;
+        struct echo_state **accepted, **fully_read, **echoed, **done;
         IMSM_CTX_PTR(ctx);
 
         accepted = accept_new_connections(ctx, ACCEPT_BUFFER);
         fully_read = read_first_line(ctx, accepted);
-        echo_line(ctx, fully_read);
+        echoed = echo_line(ctx, fully_read);
+        done = print_newline(ctx, echoed);
+
+        imsm_list_foreach(out, done) {
+                int r;
+
+                r = shutdown(out->fd, SHUT_RDWR);
+                if (r < 0)
+                        perror("shutdown");
+                close(out->fd);
+                IMSM_PUT(&echo, out);
+        }
+
         return;
 }
 

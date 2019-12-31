@@ -45,6 +45,18 @@ static IMSM(, struct echo_state) echo;
 static struct echo_state backing[128];
 
 static void
+echo_state_init(void *vstate)
+{
+        struct echo_state *state = vstate;
+
+        state->fd = -1;
+        state->in_index = 0;
+        state->newline_index = 0;
+        state->out_index = 0;
+        return;
+}
+
+static void
 echo_state_deinit(void *vstate)
 {
         struct echo_state *state = vstate;
@@ -52,10 +64,7 @@ echo_state_deinit(void *vstate)
         if (state->fd >= 0)
                 close(state->fd);
 
-        state->fd = -1;
-        state->in_index = 0;
-        state->newline_index = 0;
-        state->out_index = 0;
+        echo_state_init(state);
         return;
 }
 
@@ -186,7 +195,6 @@ accept_new_connections(struct imsm_ctx *ctx, size_t batch_limit)
                 if (new_connection < 0) {
                         if (errno != EAGAIN && errno != EWOULDBLOCK)
                                 perror("accept4");
-                        state->fd = -1;
                         IMSM_PUT(&echo, state);
                         break;
                 }
@@ -453,7 +461,7 @@ main(int argc, char **argv)
         attach_accept_fd();
 
         IMSM_INIT(&echo, header, backing, sizeof(backing),
-            echo_state_deinit, echo_fn);
+            echo_state_init, echo_state_deinit, echo_fn);
         run_echo_loop();
         return 0;
 }

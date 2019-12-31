@@ -204,6 +204,7 @@ slab_add_free(struct imsm_slab *slab, struct imsm_entry *entry)
 static void
 slab_init_freelist(struct imsm_slab *slab)
 {
+        void(*init_fn)(void *) = slab->init_fn;
         char *const arena = slab->arena;
         const size_t elsize = slab->element_size;
         const size_t nelem = slab->arena_size / elsize;
@@ -215,6 +216,7 @@ slab_init_freelist(struct imsm_slab *slab)
 
                 to_free = (struct imsm_entry *)(arena + i * elsize);
                 *to_free = (struct imsm_entry) { 0 };
+                init_fn(to_free);
                 slab_add_free(slab, to_free);
         }
 
@@ -233,7 +235,7 @@ slab_init_freelist(struct imsm_slab *slab)
 }
 
 static void
-noop_deinit(void *ptr)
+noop_fn(void *ptr)
 {
 
         (void)ptr;
@@ -242,16 +244,17 @@ noop_deinit(void *ptr)
 
 void
 imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
-    size_t elsize, void (*deinit_fn)(void *))
+    size_t elsize, void (*init_fn)(void *), void (*deinit_fn)(void *))
 {
 
         assert(elsize >= sizeof(struct imsm_entry) &&
             "Slab element type must include a `struct imsm_entry` header");
 
+        slab->deinit_fn = (deinit_fn != NULL) ? deinit_fn : noop_fn;
         slab->arena = arena;
         slab->arena_size = arena_size;
         slab->element_size = elsize;
-        slab->deinit_fn = (deinit_fn != NULL) ? deinit_fn : noop_deinit;
+        slab->init_fn = (init_fn != NULL) ? init_fn : noop_fn;
         slab_init_freelist(slab);
         return;
 }

@@ -37,6 +37,8 @@ struct imsm_slab {
         size_t arena_size;
         size_t element_size;
         size_t element_count;
+
+        void (*init_fn)(void *);
 };
 
 /*
@@ -46,11 +48,12 @@ struct imsm_slab {
  * contents, and the element type is assumed to contain a `struct
  * imsm_entry` header.
  *
- * If non-NULL, `deinit_fn` will be called on every slab element `put`
- * back on the slab.
+ * If non-NULL, `init_fn` will be called before returning every slab
+ * for the first time out of `imsm_get`. If non-NULL, `deinit_fn` will
+ * be called on every slab element `put` back on the slab.
  */
 void imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
-    size_t elsize, void (*deinit_fn)(void *));
+    size_t elsize, void (*init_fn)(void *), void (*deinit_fn)(void *));
 
 /*
  * Allocates one object from the `imsm`'s slab, or NULL if the slab

@@ -20,7 +20,8 @@
                 };                                              \
         }
 
-#define IMSM_INIT(IMSM, HEADER, ARENA, ARENA_SIZE, DEINIT_FN, POLL_FN)  \
+#define IMSM_INIT(IMSM, HEADER, ARENA, ARENA_SIZE,                      \
+                  INIT_FN, DEINIT_FN, POLL_FN)                          \
         ({                                                              \
                 __typeof__(IMSM) imsm_ = (IMSM);                        \
                 typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
@@ -32,7 +33,7 @@
                     __typeof__(((elt_t_*)NULL)->HEADER), struct imsm_entry), \
                    "The header member must be a struct imsm_entry");    \
                 imsm_init(&imsm_->imsm, (ARENA), (ARENA_SIZE),          \
-                    sizeof(elt_t_), (DEINIT_FN), (POLL_FN));            \
+                    sizeof(elt_t_), (INIT_FN), (DEINIT_FN), (POLL_FN)); \
         })
 
 #define IMSM_REFER(OBJECT) (imsm_refer((IMSM_CTX_PTR_VAR), (OBJECT)))

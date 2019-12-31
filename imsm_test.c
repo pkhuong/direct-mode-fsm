@@ -28,7 +28,7 @@ init(void)
         static struct echo_state buf[128];
         
         IMSM_INIT(&echo, header, buf, sizeof(buf),
-                  NULL, echo_poll);
+                  NULL, NULL, echo_poll);
         return;
 }
 
@@ -68,7 +68,7 @@ slab_get_put_tight(void)
         IMSM_CTX_PTR(&ctx);
         /* Make sure we handle small arenas. */
         IMSM_INIT(&small_echo, header, buf, sizeof(buf),
-                  NULL, echo_poll);
+                  NULL, NULL, echo_poll);
 
         state0 = IMSM_GET(&small_echo);
         state1 = IMSM_GET(&small_echo);
@@ -118,7 +118,7 @@ slab_get_empty(void)
 
         /* Make sure we handle empty arenas. */
         IMSM_INIT(&small_echo, header, buf, sizeof(buf),
-                  NULL, echo_poll);
+                  NULL, NULL, echo_poll);
 
         IMSM_CTX_PTR(&ctx);
 

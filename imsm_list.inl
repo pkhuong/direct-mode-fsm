@@ -87,6 +87,9 @@ inline void **
         struct imsm_list_header *ret;
         size_t capacity_index;
 
+        if (capacity == 0)
+                return NULL;
+
         if (capacity < min_capacity)
                 capacity = min_capacity;
 

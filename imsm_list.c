@@ -66,6 +66,9 @@ imsm_list_get_slow(struct imsm_list_cache *cache, size_t capacity_index)
         struct imsm_list_cache_head *active;
         size_t rounded = (1ULL << capacity_index) - 2;
 
+        if (capacity_index <= 1)
+                return NULL;
+
         ret = calloc(1,
             sizeof(*ret) + rounded * (sizeof(void *) + sizeof(uint64_t)));
         if (ret == NULL)

@@ -8,14 +8,15 @@
 #include "imsm_internal.h"
 #include "imsm_list.h"
 
-#include "imsm_slab.inc"
-
 #define IMSM_MAX_REGISTERED 1024
 
 #define VERSION_NUMBER_BITS 12
 
 #define IMSM_ENCODING_MULTIPLIER ((1ULL << 31) + 1)
 #define IMSM_DECODING_MULTIPLIER 4611686016279904257ULL
+
+static void
+imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size, size_t elsize);
 
 static_assert(
     (uint64_t)IMSM_ENCODING_MULTIPLIER * IMSM_DECODING_MULTIPLIER == 1,
@@ -60,15 +61,12 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
 
         assert(imsm->poll_fn == NULL &&
             "imsm must be initialized exactly once");
+
         if (arena_size > (1UL << 36))
                 arena_size = 1UL << 36;
 
+        imsm_slab_init(&imsm->slab, arena, arena_size, elsize);
         imsm->poll_fn = poll_fn;
-        imsm->slab.arena = arena;
-        imsm->slab.arena_size = arena_size;
-        imsm->slab.element_size = elsize;
-
-        slab_init_freelist(&imsm->slab);
         imsm_register(imsm);
         return;
 }
@@ -253,3 +251,5 @@ extern struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
     struct imsm_ppoint_record);
 
 extern void imsm_region_pop(const struct imsm_unwind_record *);
+
+#include "imsm_slab.inc"

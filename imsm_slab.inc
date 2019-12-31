@@ -227,6 +227,18 @@ slab_init_freelist(struct imsm_slab *slab)
         return;
 }
 
+static void
+imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
+    size_t elsize)
+{
+
+        slab->arena = arena;
+        slab->arena_size = arena_size;
+        slab->element_size = elsize;
+        slab_init_freelist(slab);
+        return;
+}
+
 struct imsm_entry *
 imsm_get_slow(struct imsm_ctx *ctx, struct imsm *imsm)
 {

@@ -106,25 +106,6 @@ void **imsm_stage_io(struct imsm_ctx *, struct imsm_ppoint_record,
      void **list_in, uint64_t aux_match);
 
 /*
- * Allocates one object from the `imsm`'s slab, or NULL if the slab
- * has no free object.  The second argument is redundant, but serves
- * as a witness that the context is for the correct imsm.  This
- * function will abort on mismatches.
- *
- * See IMSM_GET for a type-safe version.
- */
-inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
-
-/*
- * Deallocates one object back to the `imsm`'s slab.  Safe to call on
- * NULL pointers, but will abort on any other pointer not allocated
- * by the `imsm`.
- *
- * See IMSM_PUT for a type-safe version.
- */
-inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
-
-/*
  * Augments the imsm context with a LIFO program point context record.
  * The augmentation should be unwound with `imsm_region_pop` in LIFO
  * order.
@@ -147,19 +128,6 @@ inline void imsm_region_pop(const struct imsm_unwind_record *);
 struct imsm *imsm_deref_machine(struct imsm_ref);
 
 /*
- * Accepts an interior pointer to an element of the `imsm_ctx`'s slab,
- * and returns a pointer to the entry header, or NULL if there is no
- * such element in the slab.
- */
-inline struct imsm_entry *imsm_entry_of(struct imsm_ctx *, void *);
-
-/*
- * Returns a pointer to the `i`th element of `imsm_ctx`'s slab, or
- * NULL if there is no such element, or the element is inactive.
- */
-inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);
-
-/*
  * Returns the state index for this program point record.  This value
  * increases monotonically, unless we revisit the same program point
  * twice in a row.
@@ -169,3 +137,4 @@ inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);
 inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
 
 #include "imsm_inl.h"
+#include "imsm_slab.inl"

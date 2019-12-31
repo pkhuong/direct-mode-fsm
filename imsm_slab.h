@@ -3,6 +3,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct imsm;
+struct imsm_ctx;
+
 struct imsm_slab_magazine;
 
 struct imsm_slab {
@@ -33,3 +36,43 @@ struct imsm_slab {
         struct imsm_slab_magazine *empty;
 };
 
+/*
+ * Initializes a slab with a pre-allocated backing storage at `arena`, of
+ * `arena_size` char, for elements of size `elsize` char.  The arena must
+ * be suitable aligned for the contents, and the element type is assumed
+ * to contain a `struct imsm_entry` header.
+ */
+void imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
+    size_t elsize);
+
+/*
+ * Allocates one object from the `imsm`'s slab, or NULL if the slab
+ * has no free object.  The second argument is redundant, but serves
+ * as a witness that the context is for the correct imsm.  This
+ * function will abort on mismatches.
+ *
+ * See IMSM_GET for a type-safe version.
+ */
+inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
+
+/*
+ * Deallocates one object back to the `imsm`'s slab.  Safe to call on
+ * NULL pointers, but will abort on any other pointer not allocated
+ * by the `imsm`.
+ *
+ * See IMSM_PUT for a type-safe version.
+ */
+inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
+
+/*
+ * Accepts an interior pointer to an element of the `imsm_ctx`'s slab,
+ * and returns a pointer to the entry header, or NULL if there is no
+ * such element in the slab.
+ */
+inline struct imsm_entry *imsm_entry_of(struct imsm_ctx *, void *);
+
+/*
+ * Returns a pointer to the `i`th element of `imsm_ctx`'s slab, or
+ * NULL if there is no such element, or the element is inactive.
+ */
+inline struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);

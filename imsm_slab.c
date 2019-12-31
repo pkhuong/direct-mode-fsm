@@ -1,5 +1,6 @@
 #include "imsm_slab.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include "imsm.h"
@@ -235,6 +236,9 @@ void
 imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
     size_t elsize)
 {
+
+        assert(elsize >= sizeof(struct imsm_entry) &&
+            "Slab element type must include a `struct imsm_entry` header");
 
         slab->arena = arena;
         slab->arena_size = arena_size;

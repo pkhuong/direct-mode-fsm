@@ -72,6 +72,18 @@
                 imsm_put(ctx_, &imsm_->imsm, (struct imsm_entry *)ptr_); \
         })
 
+#define IMSM_PUT_N(IMSM, LIST, LIST_SIZE)                               \
+        ({                                                              \
+                __typeof__(IMSM) imsm_ = (IMSM);                        \
+                struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
+                typedef __typeof__(*imsm_->meta->eltype) elt_t_;        \
+                elt_t_ **ptr_list_ = (LIST);                            \
+                                                                        \
+                /* We know there is an imsm_entry at offset 0. */       \
+                imsm_put_n(ctx_, &imsm_->imsm,                          \
+                    (struct imsm_entry **)ptr_list_, (LIST_SIZE));      \
+        })
+
 #define IMSM_LIST_GET(TYPE, CAPACITY)                                   \
         ((TYPE **)imsm_list_get(&(IMSM_CTX_PTR_VAR)->cache, (CAPACITY)))
 

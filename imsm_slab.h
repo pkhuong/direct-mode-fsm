@@ -75,6 +75,17 @@ inline struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *);
 inline void imsm_put(struct imsm_ctx *, struct imsm *, struct imsm_entry *);
 
 /*
+ * Deallocates a list of `n` objects back to the `imsm`'s slab.  Safe
+ * to call on a list that includes NULL pointers, but will abort on
+ * any other pointer not allocated by the `imsm`.  The list will
+ * be overwritten with NULL pointers.
+ *
+ * See IMSM_PUT_N for a type-safe version.
+ */
+void imsm_put_n(struct imsm_ctx *, struct imsm *,
+    struct imsm_entry **, size_t n);
+
+/*
  * Accepts an interior pointer to an element of the `imsm_ctx`'s slab,
  * and returns a pointer to the entry header, or NULL if there is no
  * such element in the slab.

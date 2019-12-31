@@ -370,10 +370,7 @@ echo_fn(struct imsm_ctx *ctx)
         echoed = echo_line(ctx, fully_read);
         done = print_newline(ctx, echoed);
 
-        imsm_list_foreach(out, done) {
-                IMSM_PUT(&echo, out);
-        }
-
+        IMSM_PUT_N(&echo, done, imsm_list_size(done));
         return;
 }
 

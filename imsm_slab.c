@@ -317,6 +317,38 @@ imsm_put_cache_reload(struct imsm_ctx *ctx, struct imsm *imsm)
 
 extern void imsm_put(struct imsm_ctx *, struct imsm *imsm, struct imsm_entry *freed);
 
+void
+imsm_put_n(struct imsm_ctx *ctx, struct imsm *imsm,
+    struct imsm_entry **freed_list, size_t n)
+{
+        struct imsm_slab *slab = &imsm->slab;
+        void (*deinit_fn)(void *) = slab->deinit_fn;
+
+        assert(ctx->imsm == imsm &&
+            "imsm context and allocating imsm must match.");
+
+        for (size_t i = 0; i < n; i++) {
+                struct imsm_entry *freed = freed_list[i];
+                long free_index;
+
+                freed_list[i] = NULL;
+                if (freed == NULL)
+                        continue;
+
+                /* Make sure this loop matches imsm_put. */
+                deinit_fn(freed);
+                freed->version = (freed->version + 1) & ~1;
+                freed->queue_id = -1;
+                free_index = slab->current_free_index + 1;
+                slab->current_free_index = free_index;
+                slab->current_freeing[free_index] = freed;
+                if (free_index == 0)
+                        imsm_put_cache_reload(ctx, imsm);
+        }
+
+        return;
+}
+
 extern struct imsm_entry *imsm_entry_of(struct imsm_ctx *, void *);
 
 extern struct imsm_entry *imsm_traverse(struct imsm_ctx *, size_t i);

@@ -47,6 +47,7 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
                 return;
         }
 
+        /* Make sure this code matches imsm_put_n. */
         slab->deinit_fn(freed);
         freed->version = (freed->version + 1) & ~1;
         freed->queue_id = -1;

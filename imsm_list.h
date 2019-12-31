@@ -90,4 +90,4 @@ inline void imsm_list_put(struct imsm_list_cache *, void **list);
                 (imsm_list_push)((void **)imsm_buf_, ptr_value_, (AUX)); \
         })
 
-#include "imsm_list_inl.h"
+#include "imsm_list.inl"

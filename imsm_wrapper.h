@@ -44,12 +44,12 @@
 
 #define IMSM_STAGE(LOC_INFO, LIST_IN, AUX_MATCH)                        \
         ({                                                              \
-                __typeof__(**(LIST_IN)) **list_in_ = (LIST_IN);         \
+                __typeof__(**(LIST_IN)) **stage_list_in_ = (LIST_IN);   \
                 struct imsm_ctx *ctx_ = (IMSM_CTX_PTR_VAR);             \
                                                                         \
                 (__typeof__(list_in_))imsm_stage_io(                    \
                     ctx_, IMSM_PPOINT_RECORD(IMSM_UNPAREN(LOC_INFO)),   \
-                    (void **)list_in_, (AUX_MATCH));                    \
+                    (void **)stage_list_in_, (AUX_MATCH));              \
         })
 
 #define IMSM_GET(IMSM)                                                  \

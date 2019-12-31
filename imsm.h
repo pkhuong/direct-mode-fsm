@@ -6,8 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "imsm_internal.h"
 #include "imsm_list.h"
+#include "imsm_ppoint.h"
 #include "imsm_slab.h"
 #include "imsm_wrapper.h"
 
@@ -105,36 +105,5 @@ bool imsm_notify(struct imsm_ref);
 void **imsm_stage_io(struct imsm_ctx *, struct imsm_ppoint_record,
      void **list_in, uint64_t aux_match);
 
-/*
- * Augments the imsm context with a LIFO program point context record.
- * The augmentation should be unwound with `imsm_region_pop` in LIFO
- * order.
- *
- * See IMSM_REGION(CTX, NAME, ITER?) and WITH_IMSM_REGION(CTX, NAME, ITER?)
- * for convenient wrappers.
- */
-inline struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
-    struct imsm_ppoint_record);
-
-inline void imsm_region_pop(const struct imsm_unwind_record *);
-
-/*
- * Exposed only for testing.
- */
-
-/*
- * Returns the state machine encoded in the reference, if any.
- */
-struct imsm *imsm_deref_machine(struct imsm_ref);
-
-/*
- * Returns the state index for this program point record.  This value
- * increases monotonically, unless we revisit the same program point
- * twice in a row.
- *
- * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
- */
-inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
-
-#include "imsm_inl.h"
+#include "imsm_ppoint.inl"
 #include "imsm_slab.inl"

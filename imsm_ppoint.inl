@@ -1,6 +1,6 @@
-#pragma once
+/* -*- mode: C -*- */
 
-#include <stdint.h>
+#pragma once
 
 inline struct imsm_unwind_record
 imsm_region_push(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
@@ -40,11 +40,11 @@ imsm_index(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
         uint64_t iteration_diff_lo =
             (uint64_t)(ctx->position.iteration) ^ (uint64_t)(record.iteration);
         /* Only increment if the record differs in ppoint or iteration. */
-        size_t increment = !!(ppoint_diff | iteration_diff_high | iteration_diff_lo);
+        size_t inc = !!(ppoint_diff | iteration_diff_high | iteration_diff_lo);
 
         ctx->position.iteration = record.iteration;
         ctx->position.ppoint = record.ppoint;
-        ctx->position.index += increment;
+        ctx->position.index += inc;
         /*
          * If we just incremented, undo that to simulate
          * post-increment; if we did not increment, subtract 1 to

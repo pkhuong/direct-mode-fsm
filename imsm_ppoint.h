@@ -3,6 +3,52 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct imsm_ctx;
+struct imsm_ppoint;
+struct imsm_ref;
+
+/*
+ * We can update the state index visiting a new program point.
+ *
+ * Obtain one (by value) with IMSM_PPOINT_RECORD(NAME, ITERATION?).
+ */
+struct imsm_ppoint_record {
+        __uint128_t iteration;
+        const struct imsm_ppoint *ppoint;
+        size_t index;
+};
+
+/*
+ * Augments the imsm context with a LIFO program point context record.
+ * The augmentation should be unwound with `imsm_region_pop` in LIFO
+ * order.
+ *
+ * See IMSM_REGION(CTX, NAME, ITER?) and WITH_IMSM_REGION(CTX, NAME, ITER?)
+ * for convenient wrappers.
+ */
+inline struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
+    struct imsm_ppoint_record);
+
+inline void imsm_region_pop(const struct imsm_unwind_record *);
+
+/*
+ * Exposed only for testing.
+ */
+
+/*
+ * Returns the state machine encoded in the reference, if any.
+ */
+struct imsm *imsm_deref_machine(struct imsm_ref);
+
+/*
+ * Returns the state index for this program point record.  This value
+ * increases monotonically, unless we revisit the same program point
+ * twice in a row.
+ *
+ * See IMSM_INDEX(CTX, NAME, ITER?) for a convenient wrapper.
+ */
+inline size_t imsm_index(struct imsm_ctx *, struct imsm_ppoint_record);
+
 /*
  * We use statically allocated imsm program points to map queue
  * operations to program states.
@@ -35,17 +81,6 @@ struct imsm_ppoint {
 enum imsm_ppoint_action {
         IMSM_PPOINT_ACTION_PUSH = -1,
         IMSM_PPOINT_ACTION_POP = -2,
-};
-
-/*
- * We can update the state index visiting a new program point.
- *
- * Obtain one (by value) with IMSM_PPOINT_RECORD(NAME, ITERATION?).
- */
-struct imsm_ppoint_record {
-        __uint128_t iteration;
-        const struct imsm_ppoint *ppoint;
-        size_t index;
 };
 
 /*

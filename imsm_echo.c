@@ -398,6 +398,7 @@ run_echo_loop(void)
 
                 echo.imsm.poll_fn(&ctx);
                 imsm_list_cache_recycle(&ctx.cache);
+                ctx.position = (struct imsm_ppoint_record) { 0 };
         }
 
         imsm_list_cache_deinit(&ctx.cache);

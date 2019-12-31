@@ -302,7 +302,7 @@ imsm_get_cache_reload(struct imsm *imsm)
 
 extern struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *imsm);
 
-void
+inline void
 imsm_put_cache_reload(struct imsm_ctx *ctx, struct imsm *imsm)
 {
         struct imsm_slab *slab = &imsm->slab;

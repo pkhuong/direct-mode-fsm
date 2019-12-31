@@ -80,25 +80,29 @@
                 imsm_list_put(&(IMSM_CTX_PTR_VAR)->cache, (void **)list_); \
         })
 
-#define IMSM_REGION(NAME, ...)                                          \
-        IMSM_REGION_(__COUNTER__, (IMSM_CTX_PTR_VAR),                   \
-            (NAME), ##__VA_ARGS__)
+#define IMSM_REGION(NAME, ...)                                  \
+        IMSM_REGION_(__COUNTER__, (NAME), ##__VA_ARGS__)
 
-#define IMSM_REGION_(UNIQUE, CTX, NAME, ...)                           \
-        const struct imsm_unwind_record imsm_unwind_##UNIQUE##_        \
-        __attribute__((__cleanup__(imsm_region_pop)))                  \
+#define IMSM_REGION_(UNIQUE, NAME, ...)                                 \
+        IMSM_REGION__(UNIQUE, (IMSM_CTX_PTR_VAR), NAME, ##__VA_ARGS__)
+
+#define IMSM_REGION__(UNIQUE, CTX, NAME, ...)                           \
+        const struct imsm_unwind_record imsm_unwind_##UNIQUE##_         \
+        __attribute__((__cleanup__(imsm_region_pop), __unused__))       \
                 = imsm_region_push(CTX, IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__))
 
 #define WITH_IMSM_REGION(NAME, ...)                                     \
-        WITH_IMSM_REGION_(__COUNTER__, (IMSM_CTX_PTR_VAR),              \
-            (NAME), ##__VA_ARGS__)
+        WITH_IMSM_REGION_(__COUNTER__, (NAME), ##__VA_ARGS__)
 
-#define WITH_IMSM_REGION_(UNIQUE, CTX, NAME, ...)              \
-        for (struct imsm_unwind_record imsm_unwind_##UNIQUE##_ \
-             __attribute__((__cleanup__(imsm_region_pop)))     \
-                 = imsm_region_push(CTX,                       \
-                 IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__));     \
-             imsm_unwind_##UNIQUE##_.scratch == 0;             \
+#define WITH_IMSM_REGION_(UNIQUE, NAME, ...)                            \
+        WITH_IMSM_REGION__(UNIQUE, (IMSM_CTX_PTR_VAR), NAME, ##__VA_ARGS__)
+
+#define WITH_IMSM_REGION__(UNIQUE, CTX, NAME, ...)                      \
+        for (struct imsm_unwind_record imsm_unwind_##UNIQUE##_          \
+             __attribute__((__cleanup__(imsm_region_pop), __unused__))  \
+                 = imsm_region_push(CTX,                                \
+                 IMSM_PPOINT_RECORD(NAME, ##__VA_ARGS__));              \
+             imsm_unwind_##UNIQUE##_.scratch == 0;                      \
              imsm_unwind_##UNIQUE##_.scratch = 1)
 
 /*
@@ -113,9 +117,10 @@
 #define IMSM_NOTHING_IMSM_EXTRACT
 
 #define IMSM_PPOINT(NAME) IMSM_PPOINT_((NAME), __COUNTER__)
-#define IMSM_PPOINT_(NAME, UNIQUE) \
+#define IMSM_PPOINT_(NAME, UNIQUE) IMSM_PPOINT__(NAME, UNIQUE)
+#define IMSM_PPOINT__(NAME, UNIQUE) \
         ({                         \
-                static const struct imsm_ppoint ppoint_##UNIQUE = {     \
+                static const struct imsm_ppoint ppoint_##UNIQUE##_ = {  \
                         .name = NAME,                                   \
                         .function = __PRETTY_FUNCTION__,                \
                         .file = __FILE__,                               \
@@ -123,7 +128,7 @@
                         .unique = UNIQUE,                               \
                 };                                                      \
                                                                         \
-                &ppoint_##UNIQUE;                                       \
+                &ppoint_##UNIQUE##_;                                    \
         })
 
 #define IMSM_PPOINT_RECORD(NAME, ...) IMSM_PPOINT_RECORD_(NAME, ##__VA_ARGS__, 0)

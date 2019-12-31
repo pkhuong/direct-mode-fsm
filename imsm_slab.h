@@ -9,10 +9,6 @@ struct imsm_ctx;
 struct imsm_slab_magazine;
 
 struct imsm_slab {
-        void *arena;
-        size_t arena_size;
-        size_t element_size;
-        size_t element_count;
         /* Allocation goes down to 0. */
         uint32_t current_alloc_index;
         /* Deallocation goes up to 0. */
@@ -28,12 +24,19 @@ struct imsm_slab {
         struct imsm_entry **current_allocating;
         struct imsm_entry **current_freeing;
 
+        void (*dtor)(void *);
+
         /*
          * The other two are intrusive linked stacks of full magazines
          * (freelist) or of empty ones (empty).
          */
         struct imsm_slab_magazine *freelist;
         struct imsm_slab_magazine *empty;
+
+        void *arena;
+        size_t arena_size;
+        size_t element_size;
+        size_t element_count;
 };
 
 /*

@@ -232,6 +232,14 @@ slab_init_freelist(struct imsm_slab *slab)
         return;
 }
 
+static void
+noop_dtor(void *ptr)
+{
+
+        (void)ptr;
+        return;
+}
+
 void
 imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
     size_t elsize)
@@ -243,6 +251,7 @@ imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
         slab->arena = arena;
         slab->arena_size = arena_size;
         slab->element_size = elsize;
+        slab->dtor = noop_dtor;
         slab_init_freelist(slab);
         return;
 }

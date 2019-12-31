@@ -1,10 +1,6 @@
 /* -*- mode: C -*- */
 
 /*
- * Inline implementation 
- */
-
-/*
  * Full slow path for slab allocation.
  */
 struct imsm_entry *imsm_get_slow(struct imsm_ctx *, struct imsm *);
@@ -51,6 +47,7 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
                 return;
         }
 
+        slab->dtor(freed);
         freed->version = (freed->version + 1) & ~1;
         freed->queue_id = -1;
         free_index = slab->current_free_index + 1;

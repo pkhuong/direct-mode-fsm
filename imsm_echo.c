@@ -107,6 +107,32 @@ epoll_arm(struct imsm_ref ref, int fd, uint32_t events)
         return;
 }
 
+static void
+handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
+    struct echo_state *current, enum io_result result)
+{
+        IMSM_CTX_PTR(ctx);
+
+        switch (result) {
+                case IO_RESULT_DONE:
+                        imsm_list_push(done, current, 0);
+                        break;
+
+                case IO_RESULT_RETRY:
+                        epoll_arm(IMSM_REFER(current), current->fd,
+                                  EPOLLOUT | EPOLLRDHUP);
+                        break;
+
+                case IO_RESULT_ABORT:
+                default:
+                        close(current->fd);
+                        IMSM_PUT(&echo, current);
+                        break;
+        }
+
+        return;
+}
+
 /*
  * Accepts up to `batch_limit` new connections and returns them as an
  * imsm_list of echo states.
@@ -211,24 +237,8 @@ read_first_line(struct imsm_ctx *ctx, struct echo_state **accepted)
         ready_to_read = IMSM_STAGE("ready_to_read", accepted, 0);
 
         ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_read));
-        imsm_list_foreach(current, ready_to_read) {
-                switch (read_one_line(current)) {
-                case IO_RESULT_DONE:
-                        imsm_list_push(ret, current, 0);
-                        break;
-
-                case IO_RESULT_RETRY:
-                        epoll_arm(IMSM_REFER(current), current->fd,
-                            EPOLLIN | EPOLLRDHUP);
-                        break;
-
-                case IO_RESULT_ABORT:
-                default:
-                        close(current->fd);
-                        IMSM_PUT(&echo, current);
-                        break;
-                }
-        }
+        imsm_list_foreach(current, ready_to_read)
+                handle_io_result(ret, ctx, current, read_one_line(current));
 
         return ret;
 }
@@ -287,24 +297,8 @@ echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
         ready_to_write = IMSM_STAGE("ready_to_write", fully_read, 0);
         ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_write));
 
-        imsm_list_foreach(current, ready_to_write) {
-                switch (write_one_line(current)) {
-                case IO_RESULT_DONE:
-                        imsm_list_push(ret, current, 0);
-                        break;
-
-                case IO_RESULT_RETRY:
-                        epoll_arm(IMSM_REFER(current), current->fd,
-                                  EPOLLOUT | EPOLLRDHUP);
-                        break;
-
-                case IO_RESULT_ABORT:
-                default:
-                        close(current->fd);
-                        IMSM_PUT(&echo, current);
-                        break;
-                }
-        }
+        imsm_list_foreach(current, ready_to_write)
+                handle_io_result(ret, ctx, current, write_one_line(current));
 
         return ret;
 }
@@ -338,24 +332,8 @@ print_newline(struct imsm_ctx *ctx, struct echo_state **fully_written)
         ready_to_nl = IMSM_STAGE("ready_to_newline", fully_written, 0);
         ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_nl));
 
-        imsm_list_foreach(current, ready_to_nl) {
-                switch (print_one_newline(current)) {
-                case IO_RESULT_DONE:
-                        imsm_list_push(ret, current, 0);
-                        break;
-
-                case IO_RESULT_RETRY:
-                        epoll_arm(IMSM_REFER(current), current->fd,
-                                  EPOLLOUT | EPOLLRDHUP);
-                        break;
-
-                case IO_RESULT_ABORT:
-                default:
-                        close(current->fd);
-                        IMSM_PUT(&echo, current);
-                        break;
-                }
-        }
+        imsm_list_foreach(current, ready_to_nl)
+                handle_io_result(ret, ctx, current, print_one_newline(current));
 
         return ret;
 }

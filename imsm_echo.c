@@ -133,6 +133,20 @@ handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
         return;
 }
 
+#define echo_list_map(IN, VAR, EXPRESSION)                              \
+        ({                                                              \
+                struct echo_state *const *list_in_ = (IN);              \
+                struct echo_state **list_out_ =                         \
+                        IMSM_LIST_GET(struct echo_state,                \
+                                      imsm_list_size(list_in_));        \
+                                                                        \
+                                                                        \
+                imsm_list_foreach(VAR, list_in_)                        \
+                        handle_io_result(list_out_, IMSM_CTX_PTR_VAR,   \
+                            VAR, EXPRESSION);                           \
+                list_out_;                                              \
+        })
+
 /*
  * Accepts up to `batch_limit` new connections and returns them as an
  * imsm_list of echo states.
@@ -230,17 +244,11 @@ read_one_line(struct echo_state *state)
 static struct echo_state **
 read_first_line(struct imsm_ctx *ctx, struct echo_state **accepted)
 {
-        struct echo_state **ready_to_read, **ret;
         IMSM_CTX_PTR(ctx);
 
         IMSM_REGION("read_first_line");
-        ready_to_read = IMSM_STAGE("ready_to_read", accepted, 0);
-
-        ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_read));
-        imsm_list_foreach(current, ready_to_read)
-                handle_io_result(ret, ctx, current, read_one_line(current));
-
-        return ret;
+        return echo_list_map(IMSM_STAGE("ready_to_read", accepted, 0),
+            current, read_one_line(current));
 }
 
 /*
@@ -290,17 +298,11 @@ write_one_line(struct echo_state *state)
 static struct echo_state **
 echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
 {
-        struct echo_state **ready_to_write, **ret;
         IMSM_CTX_PTR(ctx);
 
         IMSM_REGION("echo_line");
-        ready_to_write = IMSM_STAGE("ready_to_write", fully_read, 0);
-        ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_write));
-
-        imsm_list_foreach(current, ready_to_write)
-                handle_io_result(ret, ctx, current, write_one_line(current));
-
-        return ret;
+        return echo_list_map(IMSM_STAGE("ready_to_write", fully_read, 0),
+            current, write_one_line(current));
 }
 
 static enum io_result
@@ -324,18 +326,11 @@ print_one_newline(struct echo_state *state)
 static struct echo_state **
 print_newline(struct imsm_ctx *ctx, struct echo_state **fully_written)
 {
-        struct echo_state **ready_to_nl, **ret;
-
         IMSM_CTX_PTR(ctx);
 
         IMSM_REGION("print_newline");
-        ready_to_nl = IMSM_STAGE("ready_to_newline", fully_written, 0);
-        ret = IMSM_LIST_GET(struct echo_state, imsm_list_size(ready_to_nl));
-
-        imsm_list_foreach(current, ready_to_nl)
-                handle_io_result(ret, ctx, current, print_one_newline(current));
-
-        return ret;
+        return echo_list_map(IMSM_STAGE("ready_to_newline", fully_written, 0),
+            current, print_one_newline(current));
 }
 
 /*

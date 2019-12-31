@@ -133,7 +133,7 @@ epoll_arm(struct imsm_ref ref, int fd, uint32_t events)
 
 static void
 handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
-    struct echo_state *current, enum io_result result)
+    struct echo_state *current, uint32_t events, enum io_result result)
 {
         IMSM_CTX_PTR(ctx);
 
@@ -143,8 +143,7 @@ handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
                         break;
 
                 case IO_RESULT_RETRY:
-                        epoll_arm(IMSM_REFER(current), current->fd,
-                                  EPOLLOUT | EPOLLRDHUP);
+                        epoll_arm(IMSM_REFER(current), current->fd, events);
                         break;
 
                 case IO_RESULT_ABORT:
@@ -156,7 +155,7 @@ handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
         return;
 }
 
-#define echo_list_map(IN, VAR, EXPRESSION)                              \
+#define echo_list_map(IN, EVENTS, VAR, EXPRESSION)                      \
         ({                                                              \
                 struct echo_state *const *list_in_ = (IN);              \
                 struct echo_state **list_out_ =                         \
@@ -166,7 +165,7 @@ handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
                                                                         \
                 imsm_list_foreach(VAR, list_in_)                        \
                         handle_io_result(list_out_, IMSM_CTX_PTR_VAR,   \
-                            VAR, EXPRESSION);                           \
+                            VAR, (EVENTS), (EXPRESSION));               \
                 list_out_;                                              \
         })
 
@@ -271,7 +270,7 @@ read_first_line(struct imsm_ctx *ctx, struct echo_state **accepted)
 
         IMSM_REGION("read_first_line");
         return echo_list_map(IMSM_STAGE("ready_to_read", accepted, 0),
-            current, read_one_line(current));
+            EPOLLIN | EPOLLRDHUP, current, read_one_line(current));
 }
 
 /*
@@ -325,7 +324,7 @@ echo_line(struct imsm_ctx *ctx, struct echo_state **fully_read)
 
         IMSM_REGION("echo_line");
         return echo_list_map(IMSM_STAGE("ready_to_write", fully_read, 0),
-            current, write_one_line(current));
+            EPOLLOUT | EPOLLRDHUP, current, write_one_line(current));
 }
 
 static enum io_result
@@ -353,7 +352,7 @@ print_newline(struct imsm_ctx *ctx, struct echo_state **fully_written)
 
         IMSM_REGION("print_newline");
         return echo_list_map(IMSM_STAGE("ready_to_newline", fully_written, 0),
-            current, print_one_newline(current));
+            EPOLLOUT | EPOLLRDHUP, current, print_one_newline(current));
 }
 
 /*

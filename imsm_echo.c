@@ -385,25 +385,30 @@ echo_fn(struct imsm_ctx *ctx)
 static void
 run_echo_loop(void)
 {
-        struct epoll_event events[32];
         struct imsm_ctx ctx = {
                 .imsm = &echo.imsm,
         };
-        int r;
 
-        r = epoll_wait(epoll_fd, events, sizeof(events) / sizeof(events[0]),
-                       1000);
-        if (r < 0 && errno != EINTR) {
-                perror("epoll");
-                abort();
+        for (;;) {
+                struct epoll_event events[32];
+                int r;
+
+                r = epoll_wait(epoll_fd, events, sizeof(events) / sizeof(events[0]),
+                               1000);
+                if (r < 0 && errno != EINTR) {
+                        perror("epoll");
+                        abort();
+                }
+
+                if (r > 0) {
+                        for (size_t i = 0, n = r; i < n; i++)
+                                imsm_notify((struct imsm_ref){events[i].data.u64});
+                }
+
+                echo.imsm.poll_fn(&ctx);
+                imsm_list_cache_recycle(&ctx.cache);
         }
 
-        if (r > 0) {
-                for (size_t i = 0, n = r; i < n; i++)
-                        imsm_notify((struct imsm_ref){events[i].data.u64});
-        }
-
-        echo.imsm.poll_fn(&ctx);
         imsm_list_cache_deinit(&ctx.cache);
         return;
 }
@@ -461,8 +466,6 @@ main(int argc, char **argv)
         attach_accept_fd();
 
         IMSM_INIT(&echo, header, backing, sizeof(backing), echo_fn);
-        for (;;)
-                run_echo_loop();
-
+        run_echo_loop();
         return 0;
 }

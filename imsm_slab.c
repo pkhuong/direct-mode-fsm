@@ -323,20 +323,17 @@ imsm_put_n(struct imsm_ctx *ctx, struct imsm *imsm,
 {
         struct imsm_slab *slab = &imsm->slab;
         void (*deinit_fn)(void *) = slab->deinit_fn;
+        size_t non_null_count;
         long free_index;
 
         assert(ctx->imsm == imsm &&
             "imsm context and allocating imsm must match.");
 
-        for (size_t i = 0; i < n; i++) {
-                struct imsm_entry *freed = freed_list[i];
-
-                if (freed != NULL)
-                        deinit_fn(freed);
-        }
-
-        /* Locally replace current_free_index with the scalar free_index. */
-        free_index = slab->current_free_index;
+        /*
+         * Call the deinit function on non-null entries and slide them
+         * to the left of the array.
+         */
+        non_null_count = 0;
         for (size_t i = 0; i < n; i++) {
                 struct imsm_entry *freed = freed_list[i];
 
@@ -344,6 +341,20 @@ imsm_put_n(struct imsm_ctx *ctx, struct imsm *imsm,
                 if (freed == NULL)
                         continue;
 
+                deinit_fn(freed);
+                freed_list[non_null_count++] = freed;
+        }
+
+        /* Locally replace current_free_index with the scalar free_index. */
+        free_index = slab->current_free_index;
+
+        /*
+         * Iterate over non-NULL entries and add them to the free list.
+         */
+        for (size_t i = 0; i < non_null_count; i++) {
+                struct imsm_entry *freed = freed_list[i];
+
+                freed_list[i] = NULL;
                 /* Make sure this loop matches imsm_put. */
                 freed->version = (freed->version + 1) & ~1;
                 freed->queue_id = -1;

@@ -81,6 +81,8 @@ imsm_list_get_slow(struct imsm_list_cache *cache, size_t capacity_index)
                 TAILQ_INIT(active);
 
         TAILQ_INSERT_HEAD(active, ret, linkage);
+
+        ret->size = 0;
         return (void **)(ret + 1);
 }
 

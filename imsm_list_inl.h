@@ -98,6 +98,8 @@ inline void **
 
         TAILQ_REMOVE(&cache->per_size[capacity_index].free, ret, linkage);
         TAILQ_INSERT_HEAD(&cache->per_size[capacity_index].active, ret, linkage);
+
+        ret->size = 0;
         return (void **)(ret + 1);
 }
 

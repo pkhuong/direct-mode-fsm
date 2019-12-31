@@ -44,6 +44,21 @@ static IMSM(, struct echo_state) echo;
  */
 static struct echo_state backing[128];
 
+static void
+echo_state_deinit(void *vstate)
+{
+        struct echo_state *state = vstate;
+
+        if (state->fd >= 0)
+                close(state->fd);
+
+        state->fd = -1;
+        state->in_index = 0;
+        state->newline_index = 0;
+        state->out_index = 0;
+        return;
+}
+
 /*
  * Attaches the accept fd to the epoll fd.
  */
@@ -125,7 +140,6 @@ handle_io_result(struct echo_state **done, struct imsm_ctx *ctx,
 
                 case IO_RESULT_ABORT:
                 default:
-                        close(current->fd);
                         IMSM_PUT(&echo, current);
                         break;
         }
@@ -172,6 +186,7 @@ accept_new_connections(struct imsm_ctx *ctx, size_t batch_limit)
                 if (new_connection < 0) {
                         if (errno != EAGAIN && errno != EWOULDBLOCK)
                                 perror("accept4");
+                        state->fd = -1;
                         IMSM_PUT(&echo, state);
                         break;
                 }
@@ -348,7 +363,6 @@ echo_fn(struct imsm_ctx *ctx)
         done = print_newline(ctx, echoed);
 
         imsm_list_foreach(out, done) {
-                close(out->fd);
                 IMSM_PUT(&echo, out);
         }
 
@@ -438,7 +452,8 @@ main(int argc, char **argv)
 
         attach_accept_fd();
 
-        IMSM_INIT(&echo, header, backing, sizeof(backing), echo_fn);
+        IMSM_INIT(&echo, header, backing, sizeof(backing),
+            echo_state_deinit, echo_fn);
         run_echo_loop();
         return 0;
 }

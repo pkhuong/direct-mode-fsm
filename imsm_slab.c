@@ -233,7 +233,7 @@ slab_init_freelist(struct imsm_slab *slab)
 }
 
 static void
-noop_dtor(void *ptr)
+noop_deinit(void *ptr)
 {
 
         (void)ptr;
@@ -242,7 +242,7 @@ noop_dtor(void *ptr)
 
 void
 imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
-    size_t elsize)
+    size_t elsize, void (*deinit_fn)(void *))
 {
 
         assert(elsize >= sizeof(struct imsm_entry) &&
@@ -251,7 +251,7 @@ imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
         slab->arena = arena;
         slab->arena_size = arena_size;
         slab->element_size = elsize;
-        slab->dtor = noop_dtor;
+        slab->deinit_fn = (deinit_fn != NULL) ? deinit_fn : noop_deinit;
         slab_init_freelist(slab);
         return;
 }

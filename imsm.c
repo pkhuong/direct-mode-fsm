@@ -54,7 +54,7 @@ imsm_register(struct imsm *imsm)
 
 void
 imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
-    void (*poll_fn)(struct imsm_ctx *))
+    void (*deinit_fn)(void *), void (*poll_fn)(struct imsm_ctx *))
 {
 
         assert(imsm->poll_fn == NULL &&
@@ -63,7 +63,7 @@ imsm_init(struct imsm *imsm, void *arena, size_t arena_size, size_t elsize,
         if (arena_size > (1UL << 36))
                 arena_size = 1UL << 36;
 
-        imsm_slab_init(&imsm->slab, arena, arena_size, elsize);
+        imsm_slab_init(&imsm->slab, arena, arena_size, elsize, deinit_fn);
         imsm->poll_fn = poll_fn;
         imsm_register(imsm);
         return;

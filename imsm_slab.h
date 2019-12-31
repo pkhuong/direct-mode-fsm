@@ -24,7 +24,7 @@ struct imsm_slab {
         struct imsm_entry **current_allocating;
         struct imsm_entry **current_freeing;
 
-        void (*dtor)(void *);
+        void (*deinit_fn)(void *);
 
         /*
          * The other two are intrusive linked stacks of full magazines
@@ -40,13 +40,17 @@ struct imsm_slab {
 };
 
 /*
- * Initializes a slab with a pre-allocated backing storage at `arena`, of
- * `arena_size` char, for elements of size `elsize` char.  The arena must
- * be suitable aligned for the contents, and the element type is assumed
- * to contain a `struct imsm_entry` header.
+ * Initializes a slab with a pre-allocated backing storage at `arena`,
+ * of `arena_size` char, for elements of size `elsize` char.  The
+ * arena must be zero-initialized and suitably aligned for the
+ * contents, and the element type is assumed to contain a `struct
+ * imsm_entry` header.
+ *
+ * If non-NULL, `deinit_fn` will be called on every slab element `put`
+ * back on the slab.
  */
 void imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
-    size_t elsize);
+    size_t elsize, void (*deinit_fn)(void *));
 
 /*
  * Allocates one object from the `imsm`'s slab, or NULL if the slab

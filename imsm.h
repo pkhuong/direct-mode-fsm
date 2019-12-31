@@ -70,7 +70,7 @@ struct imsm_ctx {
  * The arena should be zero-initialized.
  */
 void imsm_init(struct imsm *, void *arena, size_t arena_size, size_t elsize,
-    void (*poll_fn)(struct imsm_ctx *));
+    void (*deinit_fn)(void *), void (*poll_fn)(struct imsm_ctx *));
 
 /*
  * Returns a packed reference to an imsm and a pointer managed by that

@@ -47,7 +47,7 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
                 return;
         }
 
-        slab->dtor(freed);
+        slab->deinit_fn(freed);
         freed->version = (freed->version + 1) & ~1;
         freed->queue_id = -1;
         free_index = slab->current_free_index + 1;

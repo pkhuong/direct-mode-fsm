@@ -7,6 +7,7 @@
 
 #include "imsm_internal.h"
 #include "imsm_list.h"
+#include "imsm_slab.h"
 
 #define IMSM_MAX_REGISTERED 1024
 
@@ -14,9 +15,6 @@
 
 #define IMSM_ENCODING_MULTIPLIER ((1ULL << 31) + 1)
 #define IMSM_DECODING_MULTIPLIER 4611686016279904257ULL
-
-static void
-imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size, size_t elsize);
 
 static_assert(
     (uint64_t)IMSM_ENCODING_MULTIPLIER * IMSM_DECODING_MULTIPLIER == 1,
@@ -251,5 +249,3 @@ extern struct imsm_unwind_record imsm_region_push(struct imsm_ctx *,
     struct imsm_ppoint_record);
 
 extern void imsm_region_pop(const struct imsm_unwind_record *);
-
-#include "imsm_slab.inc"

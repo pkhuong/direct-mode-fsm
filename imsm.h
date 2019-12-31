@@ -8,6 +8,7 @@
 
 #include "imsm_internal.h"
 #include "imsm_list.h"
+#include "imsm_slab.h"
 #include "imsm_wrapper.h"
 
 struct imsm_ctx;

@@ -1,4 +1,8 @@
-/* -*- mode: C -*- */
+#include "imsm_slab.h"
+
+#include <stdlib.h>
+
+#include "imsm.h"
 
 /*
  * Slab implementation for imsm.
@@ -227,7 +231,7 @@ slab_init_freelist(struct imsm_slab *slab)
         return;
 }
 
-static void
+void
 imsm_slab_init(struct imsm_slab *slab, void *arena, size_t arena_size,
     size_t elsize)
 {

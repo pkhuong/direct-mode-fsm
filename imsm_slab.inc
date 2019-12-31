@@ -66,7 +66,7 @@ slab_get_empty_magazine(struct imsm_slab *slab)
 {
         struct imsm_slab_magazine *ret = slab->empty;
 
-        if (ret != NULL) {
+        if (__builtin_expect(ret != NULL, 1)) {
                 slab->empty = ret->next;
                 return ret;
         }
@@ -83,10 +83,10 @@ slab_get_full_magazine(struct imsm_slab *slab)
 {
         struct imsm_slab_magazine *ret = slab->freelist;
 
-        if (ret != NULL) {
-                slab->freelist = ret->next;
-        }
+        if (__builtin_expect(ret == NULL, 0))
+                return NULL;
 
+        slab->freelist = ret->next;
         return ret;
 }
 
@@ -255,7 +255,7 @@ imsm_get_cache_reload(struct imsm *imsm)
          * If we have an empty allocation cache, push it to the list
          * of empty magazines.
          */
-        if (slab->current_allocating != NULL) {
+        if (__builtin_expect(slab->current_allocating != NULL, 1)) {
                 struct imsm_slab_magazine *empty;
 
                 empty = magazine_of_alloc_cache(slab->current_allocating);
@@ -265,6 +265,7 @@ imsm_get_cache_reload(struct imsm *imsm)
         }
 
         slab_refresh_current_allocating(slab);
+        return;
 }
 
 extern struct imsm_entry *imsm_get(struct imsm_ctx *, struct imsm *imsm);

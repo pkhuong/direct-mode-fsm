@@ -51,7 +51,9 @@ imsm_list_cache_recycle(struct imsm_list_cache *cache)
                              linkage);
         }
 
-        cache_head_deinit(&cache->uncached_active);
+        /* Move the NULL check here: recycle is on the hot path. */
+        if (__builtin_expect(cache->uncached_active.tqh_first != NULL, 0))
+                cache_head_deinit(&cache->uncached_active);
         return;
 }
 

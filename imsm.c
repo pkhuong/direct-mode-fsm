@@ -109,7 +109,7 @@ imsm_refer(struct imsm_ctx *ctx, void *object)
         return ret;
 }
 
-struct imsm *
+inline struct imsm *
 imsm_deref_machine(struct imsm_ref ref)
 {
         union imsm_encoded_reference encoded = {
@@ -123,7 +123,7 @@ imsm_deref_machine(struct imsm_ref ref)
         return imsm_list.list[encoded.global_index];
 }
 
-struct imsm_entry *
+inline struct imsm_entry *
 imsm_deref(struct imsm_ref ref)
 {
         static const size_t version_mask = (1UL << VERSION_NUMBER_BITS) - 1;
@@ -201,11 +201,17 @@ imsm_stage_in(struct imsm_ctx *ctx, size_t ppoint_index,
 static void
 imsm_stage_out(void **list_out, struct imsm_ctx *ctx, size_t ppoint_index)
 {
+        const struct imsm_slab *slab = &ctx->imsm->slab;
+        const uintptr_t arena_base = (uintptr_t)slab->arena;
 
-        for (size_t i = 0, n = ctx->imsm->slab.element_count; i < n; i++) {
+        for (size_t i = 0, n = slab->element_count; i < n; i++) {
                 struct imsm_entry *entry;
 
-                entry = imsm_traverse(ctx, i);
+                /*
+                 * XXX: would imsm_traverse compile down to this with
+                 * aliasing annotations?
+                 */
+                entry = (void *)(arena_base + i * slab->element_size);
                 if (entry != NULL &&
                     entry->queue_id == ppoint_index &&
                     entry->wakeup_pending != 0) {

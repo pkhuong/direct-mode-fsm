@@ -45,7 +45,7 @@ imsm_put(struct imsm_ctx *ctx, struct imsm *imsm, struct imsm_entry *freed)
         struct imsm_slab *slab = &imsm->slab;
         long free_index;
 
-        if (freed == NULL) {
+        if (__builtin_expect(freed == NULL, 0)) {
                 return;
         }
 
@@ -79,7 +79,7 @@ imsm_traverse(struct imsm_ctx *ctx, size_t i)
         uintptr_t arena_base = (uintptr_t)slab->arena;
         struct imsm_entry *ret;
 
-        if (i >= slab->element_count)
+        if (__builtin_expect(i >= slab->element_count, 0))
                 return NULL;
 
         ret = (void *)(arena_base + i * slab->element_size);
@@ -89,16 +89,25 @@ imsm_traverse(struct imsm_ctx *ctx, size_t i)
 inline size_t
 imsm_index(struct imsm_ctx *ctx, struct imsm_ppoint_record record)
 {
-
-        /* If the record is the same, return the same state index. */
-        if (ctx->position.ppoint == record.ppoint &&
-            ctx->position.iteration == record.iteration)
-                /* Compensate for the post-increment. */
-                return ctx->position.index - 1;
+        uintptr_t ppoint_diff
+            = (uintptr_t)ctx->position.ppoint ^ (uintptr_t)record.ppoint;
+        uint64_t iteration_diff_high
+            = (uint64_t)(ctx->position.iteration >> 64)
+            ^ (uint64_t)(record.iteration >> 64);
+        uint64_t iteration_diff_lo =
+            (uint64_t)(ctx->position.iteration) ^ (uint64_t)(record.iteration);
+        /* Only increment if the record differs in ppoint or iteration. */
+        size_t increment = !!(ppoint_diff | iteration_diff_high | iteration_diff_lo);
 
         ctx->position.iteration = record.iteration;
         ctx->position.ppoint = record.ppoint;
-        return ctx->position.index++;
+        ctx->position.index += increment;
+        /*
+         * If we just incremented, undo that to simulate
+         * post-increment; if we did not increment, subtract 1 to
+         * override the post-increment.
+         */
+        return ctx->position.index - 1;
 }
 
 inline struct imsm_unwind_record
